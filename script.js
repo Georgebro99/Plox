@@ -7,8 +7,10 @@ const STARTERS = [
     moves: [
       { name: 'Flare Bite', power: 24, accuracy: 0.9, type: 'fire' },
       { name: 'Tail Slam', power: 18, accuracy: 0.95, type: 'normal' },
+      { name: 'Blaze Rush', power: 20, accuracy: 0.93, type: 'fire' },
       { name: 'Focus Up', power: 0, accuracy: 1, type: 'buff', buff: 6 }
-    ]
+    ],
+    unlockMoves: [{ level: 5, move: { name: 'Inferno Spin', power: 30, accuracy: 0.86, type: 'fire' } }]
   },
   {
     name: 'Aquaff',
@@ -18,8 +20,10 @@ const STARTERS = [
     moves: [
       { name: 'Bubble Burst', power: 21, accuracy: 0.95, type: 'water' },
       { name: 'Headbutt', power: 17, accuracy: 0.98, type: 'normal' },
+      { name: 'Tidal Kick', power: 22, accuracy: 0.9, type: 'water' },
       { name: 'Shell Guard', power: 0, accuracy: 1, type: 'buff', buff: 7 }
-    ]
+    ],
+    unlockMoves: [{ level: 5, move: { name: 'Maelstrom Shot', power: 31, accuracy: 0.84, type: 'water' } }]
   },
   {
     name: 'Leaflit',
@@ -29,8 +33,10 @@ const STARTERS = [
     moves: [
       { name: 'Vine Whip', power: 22, accuracy: 0.93, type: 'grass' },
       { name: 'Quick Peck', power: 15, accuracy: 1, type: 'normal' },
+      { name: 'Seed Volley', power: 21, accuracy: 0.92, type: 'grass' },
       { name: 'Nature Pulse', power: 0, accuracy: 1, type: 'buff', buff: 8 }
-    ]
+    ],
+    unlockMoves: [{ level: 5, move: { name: 'Thorn Cyclone', power: 30, accuracy: 0.86, type: 'grass' } }]
   }
 ];
 
@@ -44,8 +50,10 @@ const WILD_POOL = [
     moves: [
       { name: 'Spark Jab', power: 20, accuracy: 0.95, type: 'electric' },
       { name: 'Bolt Dash', power: 25, accuracy: 0.84, type: 'electric' },
+      { name: 'Quick Nudge', power: 16, accuracy: 1, type: 'normal' },
       { name: 'Charge Up', power: 0, accuracy: 1, type: 'buff', buff: 9 }
-    ]
+    ],
+    unlockMoves: [{ level: 6, move: { name: 'Thunder Fang', power: 33, accuracy: 0.82, type: 'electric' } }]
   },
   {
     name: 'Rockoal',
@@ -55,8 +63,10 @@ const WILD_POOL = [
     moves: [
       { name: 'Stone Ram', power: 23, accuracy: 0.9, type: 'earth' },
       { name: 'Dust Roar', power: 16, accuracy: 1, type: 'normal' },
+      { name: 'Gravel Shot', power: 21, accuracy: 0.93, type: 'earth' },
       { name: 'Iron Focus', power: 0, accuracy: 1, type: 'buff', buff: 7 }
-    ]
+    ],
+    unlockMoves: [{ level: 6, move: { name: 'Quake Break', power: 34, accuracy: 0.82, type: 'earth' } }]
   }
 ];
 
@@ -107,6 +117,35 @@ function hpBar(hp, maxHp) {
   return `<div class="hp-shell"><div class="hp-fill ${cls}" style="width:${pct}%"></div></div>`;
 }
 
+
+function xpToNext(level) {
+  return 20 + level * 10;
+}
+
+function applyLevelGrowth(mon, onUnlock) {
+  let leveled = false;
+  while (mon.xp >= xpToNext(mon.level)) {
+    mon.xp -= xpToNext(mon.level);
+    mon.level += 1;
+    mon.maxHp += 6;
+    mon.hp = mon.maxHp;
+    mon.moves = mon.moves.map((mv) => (mv.power > 0 ? { ...mv, power: mv.power + 1 } : mv));
+    leveled = true;
+
+    const unlock = (mon.unlockMoves || []).find((u) => u.level === mon.level);
+    if (unlock) {
+      mon.moves[mon.moves.length - 1] = unlock.move;
+      if (onUnlock) onUnlock(mon, unlock.move);
+    }
+  }
+  return leveled;
+}
+
+function grantXp(mon, amount, onUnlock) {
+  mon.xp = (mon.xp || 0) + amount;
+  return applyLevelGrowth(mon, onUnlock);
+}
+
 function loadAccountByName(name) {
   const raw = localStorage.getItem(`ploxmon_account_${name.toLowerCase()}`);
   return raw ? JSON.parse(raw) : null;
@@ -125,7 +164,7 @@ function toast(message) {
 }
 
 function toPlox(mon) {
-  return { ...structuredClone(mon), id: uid(), hp: mon.maxHp, level: 1, assigned: 'squad', attackBuff: 0 };
+  return { ...structuredClone(mon), id: uid(), hp: mon.maxHp, level: 1, xp: 0, assigned: 'squad', attackBuff: 0, unlockMoves: structuredClone(mon.unlockMoves || []) };
 }
 
 function ensureDom() {
@@ -292,7 +331,8 @@ function calcDamage(attacker, defender, move) {
   if (Math.random() > move.accuracy) return -1;
   const typeMult = effectiveness(move.type, defender.type);
   const variance = 0.9 + Math.random() * 0.2;
-  return Math.max(1, Math.round((move.power + (attacker.attackBuff || 0)) * typeMult * variance));
+  const levelScale = 1 + ((attacker.level || 1) - 1) * 0.05;
+  return Math.max(1, Math.round((move.power + (attacker.attackBuff || 0)) * typeMult * variance * levelScale));
 }
 
 function renderFightCard(mon, label) {
@@ -301,7 +341,7 @@ function renderFightCard(mon, label) {
       <h4>${label}: ${mon.name}</h4>
       <p class="pill">${mon.type} · Lv ${mon.level}</p>
       ${hpBar(mon.hp, mon.maxHp)}
-      <p class="help">HP ${mon.hp}/${mon.maxHp}</p>
+      <p class="help">HP ${mon.hp}/${mon.maxHp} · XP ${(mon.xp || 0)}/${xpToNext(mon.level || 1)}</p>
     </article>
   `;
 }
@@ -328,6 +368,8 @@ async function playWildTurn(moveIndex) {
 
   if (wild.hp <= 0) {
     state.wildLog.push(`<div class=\"win\">Wild ${wild.name} fainted.</div>`);
+    const leveled = grantXp(you, 12, (m, mv) => state.wildLog.push(`<div class=\"system\">${m.name} learned ${mv.name}!</div>`));
+    if (leveled) state.wildLog.push(`<div class=\"system\">${you.name} leveled up to Lv ${you.level}!</div>`);
     state.encounter = null;
     saveAccount();
     renderTabs();
@@ -574,6 +616,11 @@ function renderBattle() {
       const reward = pick(['ember', 'dew', 'fiber', 'spark', 'ore']);
       state.account.inventory[reward] += 1;
       state.account.trainerLevel += 1;
+      const squadLead = currentSquad()[0];
+      if (squadLead) {
+        const lvl = grantXp(squadLead, 18, (m, mv) => log.innerHTML += `<div class=\"system\">${m.name} learned ${mv.name}!</div>`);
+        if (lvl) log.innerHTML += `<div class=\"system\">${squadLead.name} reached Lv ${squadLead.level}!</div>`;
+      }
       log.innerHTML += `<div class="win">Victory! +1 ${reward}.</div>`;
     } else {
       log.innerHTML += '<div class="lose">Defeat. Train and craft then retry.</div>';
