@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plox Monster Battle</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <h1>Plox Monster Battle</h1>
+      <p class="subtitle">A Pokémon-style turn-based battle (no exploration).</p>
+
+      <section class="battlefield">
+        <article class="monster-card" id="player-card">
+          <h2 id="player-name">Your Monster</h2>
+          <div class="hp-wrap">
+            <span>HP</span>
+            <div class="hp-bar">
+              <div class="hp-fill" id="player-hp-fill"></div>
+            </div>
+            <span id="player-hp-text">--/--</span>
+          </div>
+          <p id="player-status" class="status-text"></p>
+        </article>
+
+        <article class="monster-card enemy" id="enemy-card">
+          <h2 id="enemy-name">Enemy Monster</h2>
+          <div class="hp-wrap">
+            <span>HP</span>
+            <div class="hp-bar">
+              <div class="hp-fill" id="enemy-hp-fill"></div>
+            </div>
+            <span id="enemy-hp-text">--/--</span>
+          </div>
+          <p id="enemy-status" class="status-text"></p>
+        </article>
+      </section>
+
+      <section class="controls">
+        <h3>Choose a move</h3>
+        <div id="move-buttons" class="move-grid"></div>
+        <button id="new-battle" class="secondary">Start New Battle</button>
+      </section>
+
+      <section class="log-panel">
+        <h3>Battle Log</h3>
+        <div id="log" class="log" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
