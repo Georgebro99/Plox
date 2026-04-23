@@ -5,12 +5,12 @@ const STARTERS = [
     maxHp: 120,
     generator: { ember: 2 },
     moves: [
-      { name: 'Flare Bite', power: 24, accuracy: 0.9, type: 'fire' },
-      { name: 'Tail Slam', power: 18, accuracy: 0.95, type: 'normal' },
-      { name: 'Blaze Rush', power: 20, accuracy: 0.93, type: 'fire' },
-      { name: 'Focus Up', power: 0, accuracy: 1, type: 'buff', buff: 6 }
+      { name: 'Flare Bite', power: 24, accuracy: 0.9, type: 'fire', maxUses: 15 },
+      { name: 'Tail Slam', power: 18, accuracy: 0.95, type: 'normal', maxUses: 20 },
+      { name: 'Blaze Rush', power: 20, accuracy: 0.93, type: 'fire', maxUses: 12 },
+      { name: 'Focus Up', power: 0, accuracy: 1, type: 'buff', buff: 6, maxUses: 8 }
     ],
-    unlockMoves: [{ level: 5, move: { name: 'Inferno Spin', power: 30, accuracy: 0.86, type: 'fire' } }]
+    unlockMoves: [{ level: 5, move: { name: 'Inferno Spin', power: 30, accuracy: 0.86, type: 'fire', maxUses: 8 } }]
   },
   {
     name: 'Aquaff',
@@ -18,12 +18,12 @@ const STARTERS = [
     maxHp: 130,
     generator: { dew: 2 },
     moves: [
-      { name: 'Bubble Burst', power: 21, accuracy: 0.95, type: 'water' },
-      { name: 'Headbutt', power: 17, accuracy: 0.98, type: 'normal' },
-      { name: 'Tidal Kick', power: 22, accuracy: 0.9, type: 'water' },
-      { name: 'Shell Guard', power: 0, accuracy: 1, type: 'buff', buff: 7 }
+      { name: 'Bubble Burst', power: 21, accuracy: 0.95, type: 'water', maxUses: 15 },
+      { name: 'Headbutt', power: 17, accuracy: 0.98, type: 'normal', maxUses: 20 },
+      { name: 'Tidal Kick', power: 22, accuracy: 0.9, type: 'water', maxUses: 12 },
+      { name: 'Shell Guard', power: 0, accuracy: 1, type: 'buff', buff: 7, maxUses: 8 }
     ],
-    unlockMoves: [{ level: 5, move: { name: 'Maelstrom Shot', power: 31, accuracy: 0.84, type: 'water' } }]
+    unlockMoves: [{ level: 5, move: { name: 'Maelstrom Shot', power: 31, accuracy: 0.84, type: 'water', maxUses: 8 } }]
   },
   {
     name: 'Leaflit',
@@ -31,12 +31,12 @@ const STARTERS = [
     maxHp: 125,
     generator: { fiber: 2 },
     moves: [
-      { name: 'Vine Whip', power: 22, accuracy: 0.93, type: 'grass' },
-      { name: 'Quick Peck', power: 15, accuracy: 1, type: 'normal' },
-      { name: 'Seed Volley', power: 21, accuracy: 0.92, type: 'grass' },
-      { name: 'Nature Pulse', power: 0, accuracy: 1, type: 'buff', buff: 8 }
+      { name: 'Vine Whip', power: 22, accuracy: 0.93, type: 'grass', maxUses: 15 },
+      { name: 'Quick Peck', power: 15, accuracy: 1, type: 'normal', maxUses: 20 },
+      { name: 'Seed Volley', power: 21, accuracy: 0.92, type: 'grass', maxUses: 12 },
+      { name: 'Nature Pulse', power: 0, accuracy: 1, type: 'buff', buff: 8, maxUses: 8 }
     ],
-    unlockMoves: [{ level: 5, move: { name: 'Thorn Cyclone', power: 30, accuracy: 0.86, type: 'grass' } }]
+    unlockMoves: [{ level: 5, move: { name: 'Thorn Cyclone', power: 30, accuracy: 0.86, type: 'grass', maxUses: 8 } }]
   }
 ];
 
@@ -48,12 +48,12 @@ const WILD_POOL = [
     maxHp: 112,
     generator: { spark: 2 },
     moves: [
-      { name: 'Spark Jab', power: 20, accuracy: 0.95, type: 'electric' },
-      { name: 'Bolt Dash', power: 25, accuracy: 0.84, type: 'electric' },
-      { name: 'Quick Nudge', power: 16, accuracy: 1, type: 'normal' },
-      { name: 'Charge Up', power: 0, accuracy: 1, type: 'buff', buff: 9 }
+      { name: 'Spark Jab', power: 20, accuracy: 0.95, type: 'electric', maxUses: 15 },
+      { name: 'Bolt Dash', power: 25, accuracy: 0.84, type: 'electric', maxUses: 10 },
+      { name: 'Quick Nudge', power: 16, accuracy: 1, type: 'normal', maxUses: 20 },
+      { name: 'Charge Up', power: 0, accuracy: 1, type: 'buff', buff: 9, maxUses: 8 }
     ],
-    unlockMoves: [{ level: 6, move: { name: 'Thunder Fang', power: 33, accuracy: 0.82, type: 'electric' } }]
+    unlockMoves: [{ level: 6, move: { name: 'Thunder Fang', power: 33, accuracy: 0.82, type: 'electric', maxUses: 7 } }]
   },
   {
     name: 'Rockoal',
@@ -61,12 +61,12 @@ const WILD_POOL = [
     maxHp: 145,
     generator: { ore: 2 },
     moves: [
-      { name: 'Stone Ram', power: 23, accuracy: 0.9, type: 'earth' },
-      { name: 'Dust Roar', power: 16, accuracy: 1, type: 'normal' },
-      { name: 'Gravel Shot', power: 21, accuracy: 0.93, type: 'earth' },
-      { name: 'Iron Focus', power: 0, accuracy: 1, type: 'buff', buff: 7 }
+      { name: 'Stone Ram', power: 23, accuracy: 0.9, type: 'earth', maxUses: 14 },
+      { name: 'Dust Roar', power: 16, accuracy: 1, type: 'normal', maxUses: 20 },
+      { name: 'Gravel Shot', power: 21, accuracy: 0.93, type: 'earth', maxUses: 12 },
+      { name: 'Iron Focus', power: 0, accuracy: 1, type: 'buff', buff: 7, maxUses: 8 }
     ],
-    unlockMoves: [{ level: 6, move: { name: 'Quake Break', power: 34, accuracy: 0.82, type: 'earth' } }]
+    unlockMoves: [{ level: 6, move: { name: 'Quake Break', power: 34, accuracy: 0.82, type: 'earth', maxUses: 7 } }]
   }
 ];
 
@@ -77,13 +77,35 @@ function cap(text) {
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
 }
 
+
+function ensureMovePP(mon) {
+  mon.movePP = mon.movePP || [];
+  mon.movePPMax = mon.movePPMax || [];
+
+  mon.moves.forEach((mv, idx) => {
+    const maxUses = mv.maxUses || 10;
+    mon.movePPMax[idx] = maxUses;
+    if (!Number.isFinite(mon.movePP[idx])) mon.movePP[idx] = maxUses;
+    mon.movePP[idx] = Math.min(mon.movePP[idx], maxUses);
+  });
+
+  mon.movePP = mon.movePP.slice(0, mon.moves.length);
+  mon.movePPMax = mon.movePPMax.slice(0, mon.moves.length);
+}
+
+function resetMovePP(mon) {
+  ensureMovePP(mon);
+  mon.movePP = mon.moves.map((mv) => mv.maxUses || 10);
+  mon.movePPMax = mon.moves.map((mv) => mv.maxUses || 10);
+}
+
 function normalizePloxmon(mon) {
   const base = SPECIES_BY_NAME[mon.name] || STARTERS[0];
   const safeMoves = Array.isArray(mon.moves) && mon.moves.every((m) => m && typeof m === 'object' && 'name' in m)
     ? mon.moves
     : structuredClone(base.moves);
 
-  return {
+  const normalized = {
     ...structuredClone(base),
     ...mon,
     moves: safeMoves.slice(0, 4),
@@ -94,6 +116,8 @@ function normalizePloxmon(mon) {
     hp: Number.isFinite(mon.hp) ? Math.max(0, mon.hp) : base.maxHp,
     maxHp: Number.isFinite(mon.maxHp) && mon.maxHp > 0 ? mon.maxHp : base.maxHp
   };
+  ensureMovePP(normalized);
+  return normalized;
 }
 
 function normalizeAccount(account) {
@@ -168,6 +192,8 @@ function applyLevelGrowth(mon, onUnlock) {
     const unlock = (mon.unlockMoves || []).find((u) => u.level === mon.level);
     if (unlock) {
       mon.moves[mon.moves.length - 1] = unlock.move;
+      ensureMovePP(mon);
+      mon.movePP[mon.moves.length - 1] = mon.moves[mon.moves.length - 1].maxUses || 10;
       if (onUnlock) onUnlock(mon, unlock.move);
     }
   }
@@ -198,7 +224,9 @@ function toast(message) {
 
 function toPlox(mon) {
   const normalized = normalizePloxmon(mon);
-  return { ...structuredClone(normalized), id: uid(), hp: normalized.maxHp, level: 1, xp: 0, assigned: 'squad', attackBuff: 0, unlockMoves: structuredClone(normalized.unlockMoves || []) };
+  const created = { ...structuredClone(normalized), id: uid(), hp: normalized.maxHp, level: 1, xp: 0, assigned: 'squad', attackBuff: 0, unlockMoves: structuredClone(normalized.unlockMoves || []) };
+  resetMovePP(created);
+  return created;
 }
 
 function ensureDom() {
@@ -321,6 +349,7 @@ function renderHub() {
     squad.forEach((m) => {
       m.hp = m.maxHp;
       m.attackBuff = 0;
+      resetMovePP(m);
     });
     saveAccount();
     renderTabs();
@@ -386,7 +415,18 @@ async function playWildTurn(moveIndex) {
 
   const you = currentSquad()[0];
   const wild = state.encounter;
+  ensureMovePP(you);
   const move = you.moves[moveIndex];
+  if ((you.movePP[moveIndex] || 0) <= 0) {
+    state.wildLog.push(`<div class=\"lose\">${move.name} is out of uses. Heal to restore it.</div>`);
+    state.wildTurnBusy = false;
+    renderTabs();
+    return;
+  }
+
+  you.movePP[moveIndex] -= 1;
+  state.wildLog.push(`<div class=\"system\">${you.name} used ${move.name}...</div>`);
+  await sleep(260);
   if (move.power === 0 && move.buff) {
     you.attackBuff = (you.attackBuff || 0) + move.buff;
     state.wildLog.push(`<div class=\"system\">${you.name} used ${move.name}. Attack +${move.buff}.</div>`);
@@ -412,7 +452,13 @@ async function playWildTurn(moveIndex) {
   }
 
   await sleep(450);
-  const enemyMove = pick(wild.moves);
+  ensureMovePP(wild);
+  const usableEnemyMoves = wild.moves.map((mv, i) => ({ mv, i })).filter((x) => (wild.movePP[x.i] || 0) > 0);
+  const choice = usableEnemyMoves.length ? pick(usableEnemyMoves) : { mv: wild.moves[0], i: 0 };
+  const enemyMove = choice.mv;
+  wild.movePP[choice.i] = Math.max(0, (wild.movePP[choice.i] || 1) - 1);
+  state.wildLog.push(`<div class=\"system\">Wild ${wild.name} used ${enemyMove.name}...</div>`);
+  await sleep(260);
   if (enemyMove.power === 0 && enemyMove.buff) {
     wild.attackBuff = (wild.attackBuff || 0) + enemyMove.buff;
     state.wildLog.push(`<div class=\"system\">Wild ${wild.name} used ${enemyMove.name}. Attack rose.</div>`);
@@ -516,8 +562,9 @@ function wireWildActionMenu(lead, inv) {
     const wrap = $('wild-attack');
     lead.moves.forEach((m, idx) => {
       const btn = document.createElement('button');
-      btn.textContent = `${m.name} (${cap(m.type)})`;
-      btn.disabled = state.wildTurnBusy;
+      ensureMovePP(lead);
+      btn.textContent = `${m.name} (${cap(m.type)}) ${lead.movePP[idx]}/${lead.movePPMax[idx]}`;
+      btn.disabled = state.wildTurnBusy || (lead.movePP[idx] || 0) <= 0;
       btn.onclick = () => { void playWildTurn(idx); };
       wrap.append(btn);
     });
@@ -556,6 +603,7 @@ function wireWildActionMenu(lead, inv) {
       if (inv.potion <= 0) return;
       inv.potion -= 1;
       lead.hp = Math.min(lead.maxHp, lead.hp + 35);
+      resetMovePP(lead);
       saveAccount();
       toast(`${lead.name} recovered HP.`);
       renderTabs();
