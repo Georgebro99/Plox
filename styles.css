@@ -1,0 +1,253 @@
+:root {
+  --bg: #0f1730;
+  --panel: #1b2548;
+  --card: #24305b;
+  --text: #f5f7ff;
+  --muted: #b6bfdc;
+  --good: #53d488;
+  --warn: #f0c86f;
+  --danger: #ef6b87;
+  --accent: #7889ff;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, system-ui, sans-serif;
+  background: radial-gradient(circle at top, #223364, var(--bg) 65%);
+  color: var(--text);
+  padding: 1rem;
+}
+
+h1,h2,h3,p { margin: 0; }
+label { display: grid; gap: 0.35rem; font-size: 0.95rem; color: var(--muted); }
+input, select {
+  width: 100%;
+  padding: 0.58rem 0.62rem;
+  border-radius: 8px;
+  border: 1px solid #54639d;
+  background: #151d3a;
+  color: var(--text);
+}
+
+button {
+  border: 1px solid #5d6baa;
+  color: var(--text);
+  background: #34457e;
+  border-radius: 10px;
+  padding: 0.58rem 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover:not(:disabled){ filter: brightness(1.12); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.app-shell { width: min(1100px, 100%); margin: 0 auto; display: grid; gap: 1rem; }
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  background: color-mix(in oklab, var(--panel), black 12%);
+  border: 1px solid #40508b; border-radius: 14px; padding: 1rem;
+}
+.muted { color: var(--muted); margin-top: 0.3rem; }
+.profile-chip { padding: 0.4rem 0.75rem; border-radius: 999px; background: #111733; border: 1px solid #5968a8; cursor: pointer; user-select: none; transition: transform 120ms ease, filter 120ms ease; }
+.profile-chip:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.profile-chip:focus-visible { outline: 2px solid #8ea0ff; outline-offset: 2px; }
+
+.panel {
+  background: color-mix(in oklab, var(--panel), black 8%);
+  border: 1px solid #40508b;
+  border-radius: 14px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+.hidden { display: none !important; }
+
+.auth-grid, .starter-list, .split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.starter-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.card {
+  background: var(--card);
+  border: 1px solid #4e5e99;
+  border-radius: 12px;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+}
+.help { color: #9eb0ef; font-size: 0.9rem; }
+
+.hub-nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+.nav-btn.active { background: linear-gradient(180deg, #6278ff, #485ccc); }
+
+.kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 0.55rem; }
+.kpi { background: #121b3a; border: 1px solid #445388; border-radius: 10px; padding: 0.65rem; }
+.kpi b { font-size: 1.1rem; display: block; margin-top: 0.2rem; }
+
+.log {
+  max-height: 200px; overflow-y: auto; border: 1px solid #445388; border-radius: 8px;
+  padding: 0.6rem; background: #111733; font-family: ui-monospace, monospace;
+}
+.log div { margin-bottom: 0.35rem; }
+.win { color: var(--good); }
+.lose { color: var(--danger); }
+.system { color: #9db0ff; }
+
+.toast {
+  position: fixed; right: 1rem; bottom: 1rem; background: #121733; border: 1px solid #5f6db0;
+  border-radius: 8px; padding: 0.6rem 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .auth-grid, .split, .kpi-row { grid-template-columns: 1fr; }
+  .starter-list, .hub-nav { grid-template-columns: 1fr 1fr; }
+}
+
+
+.mon-card { position: relative; overflow: hidden; }
+.mon-card::after {
+  content: '';
+  position: absolute;
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(120,137,255,.35), transparent 65%);
+  right: -20px; top: -20px;
+}
+
+.pill {
+  display: inline-block;
+  font-size: 0.8rem;
+  border: 1px solid #6273bb;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  color: #cdd6ff;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.battle-stage {
+  margin-top: 0.7rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.battle-card {
+  background: #131c3b;
+  border: 1px solid #4a5a95;
+  border-radius: 10px;
+  padding: 0.6rem;
+}
+
+.hp-shell {
+  width: 100%;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: #101732;
+  border: 1px solid #415088;
+  overflow: hidden;
+  margin: 0.35rem 0;
+}
+
+.hp-fill { height: 100%; }
+.hp-fill.high { background: linear-gradient(90deg, #57d98c, #90f4b8); }
+.hp-fill.mid { background: linear-gradient(90deg, #f0c86f, #ffe39f); }
+.hp-fill.low { background: linear-gradient(90deg, #ef6b87, #ff9bb0); }
+
+.move-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+}
+
+
+.battle-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.55rem;
+}
+
+
+.card, .battle-card {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 8px 20px rgba(0,0,0,0.25);
+}
+
+.battle-stage {
+  background: linear-gradient(180deg, rgba(104,130,255,0.14), rgba(17,23,51,0.5));
+  border: 1px solid #4a5a95;
+  border-radius: 12px;
+  padding: 0.45rem;
+  position: relative;
+}
+
+.battle-stage::before {
+  content: 'VS';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: rgba(220,228,255,0.35);
+}
+
+button {
+  text-transform: none;
+  letter-spacing: 0.2px;
+}
+
+.battle-actions-grid button {
+  background: linear-gradient(180deg, #4d63be, #354885);
+}
+
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 20, 0.72);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+}
+
+.modal-card {
+  width: min(620px, 92%);
+  background: #172146;
+  border: 1px solid #5566a9;
+  border-radius: 12px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.reward-row {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 0.7rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #445388;
+  margin-bottom: 0.45rem;
+  color: #aab5e4;
+}
+
+.reward-row.unlocked {
+  background: rgba(83, 212, 136, 0.12);
+  border-color: rgba(83, 212, 136, 0.5);
+  color: #ddffea;
+}
