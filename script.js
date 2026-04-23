@@ -88,7 +88,7 @@ const defaultInventory = () => ({
   ore: 0
 });
 
-const state = { account: null, activeTab: 'hub', encounter: null, wildTurnBusy: false };
+const state = { account: null, activeTab: 'hub', encounter: null, wildTurnBusy: false, wildMenu: 'root', wildLog: [] };
 const $ = (id) => document.getElementById(id);
 const els = {};
 
@@ -313,23 +313,21 @@ async function playWildTurn(moveIndex) {
   const you = currentSquad()[0];
   const wild = state.encounter;
   const move = you.moves[moveIndex];
-  const log = $('wild-log');
-
   if (move.power === 0 && move.buff) {
     you.attackBuff = (you.attackBuff || 0) + move.buff;
-    log.innerHTML += `<div class="system">${you.name} used ${move.name}. Attack +${move.buff}.</div>`;
+    state.wildLog.push(`<div class=\"system\">${you.name} used ${move.name}. Attack +${move.buff}.</div>`);
   } else {
     const dmg = calcDamage(you, wild, move);
     if (dmg < 0) {
-      log.innerHTML += `<div>${you.name}'s ${move.name} missed.</div>`;
+      state.wildLog.push(`<div>${you.name}'s ${move.name} missed.</div>`);
     } else {
       wild.hp = Math.max(0, wild.hp - dmg);
-      log.innerHTML += `<div>${you.name} used ${move.name} for ${dmg} dmg.</div>`;
+      state.wildLog.push(`<div>${you.name} used ${move.name} for ${dmg} dmg.</div>`);
     }
   }
 
   if (wild.hp <= 0) {
-    log.innerHTML += `<div class="win">Wild ${wild.name} fainted.</div>`;
+    state.wildLog.push(`<div class=\"win\">Wild ${wild.name} fainted.</div>`);
     state.encounter = null;
     saveAccount();
     renderTabs();
@@ -341,19 +339,19 @@ async function playWildTurn(moveIndex) {
   const enemyMove = pick(wild.moves);
   if (enemyMove.power === 0 && enemyMove.buff) {
     wild.attackBuff = (wild.attackBuff || 0) + enemyMove.buff;
-    log.innerHTML += `<div class="system">Wild ${wild.name} used ${enemyMove.name}. Attack rose.</div>`;
+    state.wildLog.push(`<div class=\"system\">Wild ${wild.name} used ${enemyMove.name}. Attack rose.</div>`);
   } else {
     const enemyDmg = calcDamage(wild, you, enemyMove);
     if (enemyDmg < 0) {
-      log.innerHTML += `<div>Wild ${wild.name}'s ${enemyMove.name} missed.</div>`;
+      state.wildLog.push(`<div>Wild ${wild.name}'s ${enemyMove.name} missed.</div>`);
     } else {
       you.hp = Math.max(0, you.hp - enemyDmg);
-      log.innerHTML += `<div class="lose">Wild ${wild.name} used ${enemyMove.name} for ${enemyDmg} dmg.</div>`;
+      state.wildLog.push(`<div class=\"lose\">Wild ${wild.name} used ${enemyMove.name} for ${enemyDmg} dmg.</div>`);
     }
   }
 
   if (you.hp <= 0) {
-    log.innerHTML += `<div class="lose">${you.name} fainted. Heal in Trainer Hub.</div>`;
+    state.wildLog.push(`<div class=\"lose\">${you.name} fainted. Heal in Trainer Hub.</div>`);
     state.encounter = null;
   }
 
@@ -382,6 +380,7 @@ function throwBall(ballType) {
   if (Math.random() < chance) {
     state.account.ploxmons.push(toPlox(wild));
     state.encounter = null;
+    state.wildLog = [];
     toast('Capture successful!');
   } else {
     toast(`${wild.name} broke free.`);
@@ -391,13 +390,109 @@ function throwBall(ballType) {
   renderTabs();
 }
 
+
+function renderWildActionMenu(lead, inv) {
+  if (!state.encounter || !lead) return '';
+
+  if (state.wildMenu === 'attack') {
+    return `<div id="wild-attack" class="move-grid"></div><button id="back-root">Back</button>`;
+  }
+
+  if (state.wildMenu === 'switch') {
+    return `<div id="wild-switch" class="move-grid"></div><button id="back-root">Back</button>`;
+  }
+
+  if (state.wildMenu === 'item') {
+    return `
+      <div class="move-grid">
+        <button id="throw-regular" ${inv.ploxballs_regular <= 0 ? 'disabled' : ''}>Regular Ball (${inv.ploxballs_regular})</button>
+        <button id="throw-great" ${inv.ploxballs_great <= 0 ? 'disabled' : ''}>Great Ball (${inv.ploxballs_great})</button>
+        <button id="use-potion" ${inv.potion <= 0 ? 'disabled' : ''}>Use Potion (${inv.potion})</button>
+      </div>
+      <button id="back-root">Back</button>
+    `;
+  }
+
+  return `
+    <div class="battle-actions-grid">
+      <button id="menu-attack">Attack</button>
+      <button id="menu-switch">Switch</button>
+      <button id="menu-item">Item</button>
+      <button id="leave-wild">Leave</button>
+    </div>
+  `;
+}
+
+function wireWildActionMenu(lead, inv) {
+  if (!state.encounter || !lead) return;
+
+  if (state.wildMenu === 'root') {
+    $('menu-attack').onclick = () => { state.wildMenu = 'attack'; renderTabs(); };
+    $('menu-switch').onclick = () => { state.wildMenu = 'switch'; renderTabs(); };
+    $('menu-item').onclick = () => { state.wildMenu = 'item'; renderTabs(); };
+    $('leave-wild').onclick = () => { state.encounter = null; state.wildMenu = 'root'; state.wildLog = []; renderTabs(); };
+    return;
+  }
+
+  $('back-root').onclick = () => { state.wildMenu = 'root'; renderTabs(); };
+
+  if (state.wildMenu === 'attack') {
+    const wrap = $('wild-attack');
+    lead.moves.forEach((m, idx) => {
+      const btn = document.createElement('button');
+      btn.textContent = `${m.name} (${m.type})`;
+      btn.disabled = state.wildTurnBusy;
+      btn.onclick = () => { void playWildTurn(idx); };
+      wrap.append(btn);
+    });
+    return;
+  }
+
+  if (state.wildMenu === 'switch') {
+    const wrap = $('wild-switch');
+    const squad = currentSquad();
+    squad.forEach((m) => {
+      const btn = document.createElement('button');
+      btn.textContent = `${m.name} HP ${m.hp}/${m.maxHp}`;
+      btn.disabled = m.id === lead.id || m.hp <= 0;
+      btn.onclick = () => {
+        const current = squad.find((x) => x.id === lead.id);
+        const target = squad.find((x) => x.id === m.id);
+        if (!current || !target) return;
+        // reorder by moving selected to front in persistent array
+        state.account.ploxmons = [
+          ...state.account.ploxmons.filter((x) => x.id === target.id),
+          ...state.account.ploxmons.filter((x) => x.id !== target.id)
+        ];
+        state.wildMenu = 'root';
+        saveAccount();
+        renderTabs();
+      };
+      wrap.append(btn);
+    });
+    return;
+  }
+
+  if (state.wildMenu === 'item') {
+    $('throw-regular').onclick = () => throwBall('regular');
+    $('throw-great').onclick = () => throwBall('great');
+    $('use-potion').onclick = () => {
+      if (inv.potion <= 0) return;
+      inv.potion -= 1;
+      lead.hp = Math.min(lead.maxHp, lead.hp + 35);
+      saveAccount();
+      toast(`${lead.name} recovered HP.`);
+      renderTabs();
+    };
+  }
+}
 function renderWild() {
   const lead = currentSquad()[0];
   const inv = state.account.inventory;
 
   els.tabWild.innerHTML = `
     <h2>Wild</h2>
-    <p>Battle wild Ploxmon with moves, weaken them, then capture.</p>
+    <p>Battle wild Ploxmon with moves, then capture using the 4-action battle menu.</p>
     <article class="card">
       <div class="row"><b>Lead:</b> <span>${lead ? `${lead.name} HP ${lead.hp}/${lead.maxHp}` : 'None'}</span></div>
       <div class="row"><b>Balls:</b> <span>Regular ${inv.ploxballs_regular} · Great ${inv.ploxballs_great}</span></div>
@@ -412,6 +507,8 @@ function renderWild() {
     found.hp = Math.max(20, found.maxHp - Math.floor(Math.random() * 50));
     found.attackBuff = 0;
     state.encounter = found;
+    state.wildMenu = 'root';
+    state.wildLog = [`<div class=\"system\">A wild ${found.name} appeared!</div>`];
     renderTabs();
   };
 
@@ -423,32 +520,11 @@ function renderWild() {
       ${renderFightCard(lead, 'You')}
       ${renderFightCard(state.encounter, 'Wild')}
     </div>
-    <div id="wild-moves" class="move-grid"></div>
-    <div class="move-grid">
-      <button id="throw-regular" ${inv.ploxballs_regular <= 0 ? 'disabled' : ''}>Throw Regular Ball</button>
-      <button id="throw-great" ${inv.ploxballs_great <= 0 ? 'disabled' : ''}>Throw Great Ball</button>
-      <button id="leave-wild">Run Away</button>
-    </div>
-    <div id="wild-log" class="log"></div>
+    <div id="wild-action-panel">${renderWildActionMenu(lead, inv)}</div>
+    <div id="wild-log" class="log">${state.wildLog.join('')}</div>
   `;
 
-  const moveWrap = $('wild-moves');
-  lead.moves.forEach((m, idx) => {
-    const btn = document.createElement('button');
-    btn.textContent = `${m.name} (${m.type})`;
-    btn.disabled = state.wildTurnBusy;
-    btn.onclick = () => {
-      void playWildTurn(idx);
-    };
-    moveWrap.append(btn);
-  });
-
-  $('throw-regular').onclick = () => throwBall('regular');
-  $('throw-great').onclick = () => throwBall('great');
-  $('leave-wild').onclick = () => {
-    state.encounter = null;
-    renderTabs();
-  };
+  wireWildActionMenu(lead, inv);
 }
 
 function renderBattle() {
