@@ -212,3 +212,40 @@ button {
 .battle-actions-grid button {
   background: linear-gradient(180deg, #4d63be, #354885);
 }
+
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 20, 0.72);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+}
+
+.modal-card {
+  width: min(620px, 92%);
+  background: #172146;
+  border: 1px solid #5566a9;
+  border-radius: 12px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.reward-row {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 0.7rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #445388;
+  margin-bottom: 0.45rem;
+  color: #aab5e4;
+}
+
+.reward-row.unlocked {
+  background: rgba(83, 212, 136, 0.12);
+  border-color: rgba(83, 212, 136, 0.5);
+  color: #ddffea;
+}

@@ -219,17 +219,17 @@ function workerCapacity(level) {
   return 1;
 }
 
-function applyTrainerLevelRewards(account, level) {
-  const rewards = {
-    2: { potion: 2, msg: 'Reward: 2 Potions' },
-    3: { ploxballs_great: 3, msg: 'Reward: 3 Great Ploxballs' },
-    5: { status_tonic: 2, msg: 'Reward: Worker Slot + Status Tonics' },
-    7: { ploxballs_regular: 10, msg: 'Reward: 10 Regular Ploxballs' },
-    8: { potion: 3, msg: 'Reward: Worker Slot + 3 Potions' },
-    10: { ploxballs_great: 5, msg: 'Reward: 5 Great Ploxballs' }
-  };
+const REWARD_MILESTONES = {
+  2: { potion: 2, msg: 'Reward: 2 Potions' },
+  3: { ploxballs_great: 3, msg: 'Reward: 3 Great Ploxballs' },
+  5: { status_tonic: 2, msg: 'Reward: Worker Slot + Status Tonics' },
+  7: { ploxballs_regular: 10, msg: 'Reward: 10 Regular Ploxballs' },
+  8: { potion: 3, msg: 'Reward: Worker Slot + 3 Potions' },
+  10: { ploxballs_great: 5, msg: 'Reward: 5 Great Ploxballs' }
+};
 
-  const reward = rewards[level];
+function applyTrainerLevelRewards(account, level) {
+  const reward = REWARD_MILESTONES[level];
   if (!reward) return null;
   for (const [k, v] of Object.entries(reward)) {
     if (k === 'msg') continue;
@@ -278,7 +278,7 @@ function toPlox(mon) {
 function ensureDom() {
   const ids = [
     'auth-view','starter-view','game-view','profile-chip','starter-list','toast','create-name','create-pass','create-btn',
-    'login-name','login-pass','login-btn','tab-hub','tab-crafting','tab-wild','tab-settings','tab-battle'
+    'login-name','login-pass','login-btn','tab-hub','tab-crafting','tab-wild','tab-settings','tab-battle','rewards-modal','rewards-list','close-rewards'
   ];
   for (const id of ids) {
     const key = id.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
@@ -338,7 +338,8 @@ function renderStarterSelect() {
 
 function renderProfile() {
   els.profileChip.classList.remove('hidden');
-  els.profileChip.textContent = `${state.account.name} · Trainer Lv ${state.account.trainerLevel} (${state.account.trainerXp}/${trainerXpToNext(state.account.trainerLevel)})`; 
+  els.profileChip.textContent = `${state.account.name} · Trainer Lv ${state.account.trainerLevel} (${state.account.trainerXp}/${trainerXpToNext(state.account.trainerLevel)})`;
+  els.profileChip.title = 'Click to view milestone rewards';
 }
 
 function renderHub() {
@@ -929,10 +930,35 @@ function login() {
   }
 }
 
+
+function renderRewardsModal() {
+  const currentLevel = state.account?.trainerLevel || 1;
+  const rows = Object.entries(REWARD_MILESTONES)
+    .map(([level, reward]) => {
+      const unlocked = currentLevel >= Number(level);
+      return `<div class="reward-row ${unlocked ? 'unlocked' : ''}"><b>Lv ${level}</b><span>${reward.msg}</span></div>`;
+    })
+    .join('');
+  els.rewardsList.innerHTML = `${rows}<p class="help">Worker slots: Lv1=1, Lv5=2, Lv8=3, Lv12=4.</p>`;
+}
+
+function openRewardsModal() {
+  if (!state.account) return;
+  renderRewardsModal();
+  els.rewardsModal.classList.remove('hidden');
+}
+
+function closeRewardsModal() {
+  els.rewardsModal.classList.add('hidden');
+}
+
 function wireEvents() {
   els.createBtn.addEventListener('click', createAccount);
   els.loginBtn.addEventListener('click', login);
   els.navButtons.forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
+  els.profileChip.addEventListener('click', openRewardsModal);
+  els.closeRewards.addEventListener('click', closeRewardsModal);
+  els.rewardsModal.addEventListener('click', (e) => { if (e.target === els.rewardsModal) closeRewardsModal(); });
 }
 
 function init() {
