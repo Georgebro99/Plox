@@ -50,7 +50,9 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   border: 1px solid #40508b; border-radius: 14px; padding: 1rem;
 }
 .muted { color: var(--muted); margin-top: 0.3rem; }
-.profile-chip { padding: 0.4rem 0.75rem; border-radius: 999px; background: #111733; border: 1px solid #5968a8; }
+.profile-chip { padding: 0.4rem 0.75rem; border-radius: 999px; background: #111733; border: 1px solid #5968a8; cursor: pointer; user-select: none; transition: transform 120ms ease, filter 120ms ease; }
+.profile-chip:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.profile-chip:focus-visible { outline: 2px solid #8ea0ff; outline-offset: 2px; }
 
 .panel {
   background: color-mix(in oklab, var(--panel), black 8%);

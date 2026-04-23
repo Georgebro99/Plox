@@ -957,6 +957,7 @@ function wireEvents() {
   els.loginBtn.addEventListener('click', login);
   els.navButtons.forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
   els.profileChip.addEventListener('click', openRewardsModal);
+  els.profileChip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') openRewardsModal(); });
   els.closeRewards.addEventListener('click', closeRewardsModal);
   els.rewardsModal.addEventListener('click', (e) => { if (e.target === els.rewardsModal) closeRewardsModal(); });
 }
