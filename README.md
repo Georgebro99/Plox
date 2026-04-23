@@ -14,8 +14,9 @@ Then open <http://localhost:8000>.
 
 - Account create/sign-in flow (saved in browser localStorage).
 - Start with 1 starter + 20 Regular Ploxballs.
-- Main game sections: Trainer Hub, Crafting, Wild, Settings, Battle.
-- Trainer Hub supports healing squad and assigning Ploxmon as idle item workers.
-- Crafting turns gathered materials into balls and recovery items.
-- Wild encounters allow captures with regular/great balls.
-- Battle tab includes an offline ghost-arena placeholder for PvP progression.
+- Main sections: Trainer Hub, Crafting, Wild, Settings, Battle.
+- Turn-based move combat in Wild encounters (damage, misses, buffs, HP bars).
+- Capture loop: weaken wild Ploxmon in battle, then throw regular/great Ploxballs.
+- Trainer Hub supports healing and assigning worker Ploxmon that generate crafting items.
+- Crafting converts materials into balls and recovery items.
+- Battle tab includes a polished ghost-arena match board while real online PvP remains backend-dependent.
