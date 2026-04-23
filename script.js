@@ -1,381 +1,471 @@
-const roster = [
-  {
-    name: 'Pyron',
-    species: 'Ploxmon',
-    maxHp: 120,
-    type: 'fire',
-    moves: [
-      { name: 'Flare Bite', power: 24, accuracy: 0.9, type: 'fire' },
-      { name: 'Ember Shot', power: 16, accuracy: 1, type: 'fire' },
-      { name: 'Tail Slam', power: 18, accuracy: 0.95, type: 'normal' },
-      { name: 'Focus Up', power: 0, accuracy: 1, type: 'buff', buff: 6 }
-    ]
-  },
-  {
-    name: 'Aquaff',
-    species: 'Ploxmon',
-    maxHp: 130,
-    type: 'water',
-    moves: [
-      { name: 'Bubble Burst', power: 20, accuracy: 0.95, type: 'water' },
-      { name: 'Tidal Kick', power: 23, accuracy: 0.88, type: 'water' },
-      { name: 'Headbutt', power: 17, accuracy: 0.98, type: 'normal' },
-      { name: 'Shell Guard', power: 0, accuracy: 1, type: 'buff', buff: 8 }
-    ]
-  },
-  {
-    name: 'Leaflit',
-    species: 'Ploxmon',
-    maxHp: 125,
-    type: 'grass',
-    moves: [
-      { name: 'Vine Whip', power: 21, accuracy: 0.93, type: 'grass' },
-      { name: 'Seed Volley', power: 16, accuracy: 1, type: 'grass' },
-      { name: 'Quick Peck', power: 15, accuracy: 1, type: 'normal' },
-      { name: 'Nature Pulse', power: 0, accuracy: 1, type: 'buff', buff: 7 }
-    ]
-  },
-  {
-    name: 'Voltkit',
-    species: 'Ploxmon',
-    maxHp: 112,
-    type: 'normal',
-    moves: [
-      { name: 'Spark Jab', power: 19, accuracy: 0.96, type: 'normal' },
-      { name: 'Bolt Dash', power: 25, accuracy: 0.82, type: 'normal' },
-      { name: 'Quick Swipe', power: 14, accuracy: 1, type: 'normal' },
-      { name: 'Charge Up', power: 0, accuracy: 1, type: 'buff', buff: 9 }
-    ]
-  }
+const STARTERS = [
+  { name: 'Pyron', type: 'fire', maxHp: 120, generator: { ember: 2 }, moves: ['Flare Bite', 'Tail Slam'] },
+  { name: 'Aquaff', type: 'water', maxHp: 130, generator: { dew: 2 }, moves: ['Bubble Burst', 'Headbutt'] },
+  { name: 'Leaflit', type: 'grass', maxHp: 125, generator: { fiber: 2 }, moves: ['Vine Whip', 'Quick Peck'] }
 ];
 
-const effectiveness = {
-  fire: { grass: 1.35, water: 0.7, fire: 0.85, normal: 1 },
-  water: { fire: 1.35, grass: 0.7, water: 0.85, normal: 1 },
-  grass: { water: 1.35, fire: 0.7, grass: 0.85, normal: 1 },
-  normal: { fire: 1, water: 1, grass: 1, normal: 1 }
+const WILD_POOL = [
+  ...STARTERS,
+  { name: 'Voltkit', type: 'electric', maxHp: 112, generator: { spark: 2 }, moves: ['Spark Jab', 'Bolt Dash'] },
+  { name: 'Rockoal', type: 'earth', maxHp: 145, generator: { ore: 2 }, moves: ['Stone Ram', 'Dust Roar'] }
+];
+
+const RECIPES = {
+  regular_ball: { label: 'Regular Ploxball', cost: { fiber: 1, ore: 1 }, yield: 2 },
+  great_ball: { label: 'Great Ploxball', cost: { ember: 2, spark: 2, ore: 1 }, yield: 1 },
+  potion: { label: 'Potion', cost: { dew: 2, fiber: 1 }, yield: 1 },
+  status_tonic: { label: 'Status Tonic', cost: { dew: 2, ember: 1, spark: 1 }, yield: 1 }
 };
+
+const defaultInventory = () => ({
+  ploxballs_regular: 20,
+  ploxballs_great: 0,
+  potion: 1,
+  status_tonic: 0,
+  ember: 0,
+  dew: 0,
+  fiber: 0,
+  spark: 0,
+  ore: 0
+});
 
 const state = {
-  scene: 'menu',
-  busy: false,
-  collection: [],
-  activeMonsterName: '',
-  battle: null
+  account: null,
+  activeTab: 'hub',
+  encounter: null
 };
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const cloneMonster = (monster) => structuredClone(monster);
-const pickMonster = () => cloneMonster(roster[Math.floor(Math.random() * roster.length)]);
-const hpPercent = (hp, maxHp) => Math.max(0, Math.round((hp / maxHp) * 100));
-const getOwnedMonster = (name) => state.collection.find((monster) => monster.name === name);
+const $ = (id) => document.getElementById(id);
+const els = {};
 
-const init = () => {
-  const els = {
-    startMenu: document.getElementById('start-menu'),
-    starterButtons: document.getElementById('starter-buttons'),
-    hub: document.getElementById('hub'),
-    currentPartner: document.getElementById('current-partner'),
-    searchBattle: document.getElementById('search-battle'),
-    collection: document.getElementById('collection'),
-    battleUi: document.getElementById('battle-ui'),
-    playerCard: document.getElementById('player-card'),
-    enemyCard: document.getElementById('enemy-card'),
-    playerName: document.getElementById('player-name'),
-    enemyName: document.getElementById('enemy-name'),
-    playerHpText: document.getElementById('player-hp-text'),
-    enemyHpText: document.getElementById('enemy-hp-text'),
-    playerHpFill: document.getElementById('player-hp-fill'),
-    enemyHpFill: document.getElementById('enemy-hp-fill'),
-    playerStatus: document.getElementById('player-status'),
-    enemyStatus: document.getElementById('enemy-status'),
-    moveButtons: document.getElementById('move-buttons'),
-    capture: document.getElementById('capture'),
-    run: document.getElementById('run'),
-    log: document.getElementById('log')
+const uid = () => Math.random().toString(36).slice(2, 10);
+const hash = (text) => btoa(unescape(encodeURIComponent(text))).slice(0, 24);
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+function loadAccountByName(name) {
+  const raw = localStorage.getItem(`ploxmon_account_${name.toLowerCase()}`);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function saveAccount(account = state.account) {
+  if (!account) return;
+  account.updatedAt = Date.now();
+  localStorage.setItem(`ploxmon_account_${account.name.toLowerCase()}`, JSON.stringify(account));
+}
+
+function toast(message) {
+  els.toast.textContent = message;
+  els.toast.classList.remove('hidden');
+  setTimeout(() => els.toast.classList.add('hidden'), 1800);
+}
+
+function toPlox(mon) {
+  return { ...mon, id: uid(), hp: mon.maxHp, level: 1, assigned: 'squad' };
+}
+
+function ensureDom() {
+  const ids = [
+    'auth-view','starter-view','game-view','profile-chip','starter-list','toast','create-name','create-pass','create-btn',
+    'login-name','login-pass','login-btn','tab-hub','tab-crafting','tab-wild','tab-settings','tab-battle'
+  ];
+
+  for (const id of ids) {
+    els[id.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = $(id);
+    if (!els[id.replace(/-([a-z])/g, (_, c) => c.toUpperCase())]) {
+      console.error(`Missing element #${id}`);
+      return false;
+    }
+  }
+
+  els.navButtons = Array.from(document.querySelectorAll('.nav-btn'));
+  return true;
+}
+
+function showView(view) {
+  els.authView.classList.toggle('hidden', view !== 'auth');
+  els.starterView.classList.toggle('hidden', view !== 'starter');
+  els.gameView.classList.toggle('hidden', view !== 'game');
+}
+
+function currentSquad() {
+  return state.account.ploxmons.filter((p) => p.assigned === 'squad');
+}
+
+function workers() {
+  return state.account.ploxmons.filter((p) => p.assigned === 'worker');
+}
+
+function collectWorkerItems() {
+  const now = Date.now();
+  const elapsedMins = Math.floor((now - state.account.lastCollectedAt) / 60000);
+  if (elapsedMins <= 0) return;
+
+  for (const w of workers()) {
+    const [item, perMin] = Object.entries(w.generator)[0];
+    state.account.inventory[item] += perMin * elapsedMins;
+  }
+
+  state.account.lastCollectedAt = now;
+  saveAccount();
+}
+
+function setTab(tab) {
+  state.activeTab = tab;
+  els.navButtons.forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  ['hub','crafting','wild','settings','battle'].forEach((name) => {
+    $(`tab-${name}`).classList.toggle('hidden', name !== tab);
+  });
+  renderTabs();
+}
+
+function renderStarterSelect() {
+  els.starterList.innerHTML = '';
+  STARTERS.forEach((s) => {
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <h3>${s.name}</h3>
+      <p class="help">Type: ${s.type} · HP: ${s.maxHp}</p>
+      <p class="help">Idle item: ${Object.keys(s.generator)[0]}</p>
+      <button>Choose ${s.name}</button>
+    `;
+
+    card.querySelector('button').addEventListener('click', () => {
+      state.account.ploxmons = [toPlox(s)];
+      saveAccount();
+      showView('game');
+      toast(`${s.name} joined your squad!`);
+      renderProfile();
+      setTab('hub');
+    });
+
+    els.starterList.append(card);
+  });
+}
+
+function renderProfile() {
+  els.profileChip.classList.remove('hidden');
+  els.profileChip.textContent = `${state.account.name} · Lv ${state.account.trainerLevel} Trainer`;
+}
+
+function renderHub() {
+  collectWorkerItems();
+  const inv = state.account.inventory;
+  const squad = currentSquad();
+  const workerMon = workers();
+
+  els.tabHub.innerHTML = `
+    <h2>Trainer Hub</h2>
+    <p>Manage your Ploxmon, heal your squad, and assign workers to passively gather materials.</p>
+    <div class="kpi-row">
+      <div class="kpi">Regular Balls<b>${inv.ploxballs_regular}</b></div>
+      <div class="kpi">Great Balls<b>${inv.ploxballs_great}</b></div>
+      <div class="kpi">Potions<b>${inv.potion}</b></div>
+      <div class="kpi">Workers<b>${workerMon.length}</b></div>
+    </div>
+    <div class="split">
+      <article class="card">
+        <h3>Battle Squad</h3>
+        <p class="help">Ploxmon here are available in Wild + Battle tabs.</p>
+        <div id="squad-list"></div>
+        <button id="heal-all">Heal Squad (uses 1 Potion)</button>
+      </article>
+      <article class="card">
+        <h3>Item Workers</h3>
+        <p class="help">Workers are removed from battle squad and generate items over time.</p>
+        <div id="worker-list"></div>
+      </article>
+    </div>
+  `;
+
+  const squadList = $('squad-list');
+  const workerList = $('worker-list');
+
+  squad.forEach((m) => {
+    const row = document.createElement('div');
+    row.innerHTML = `${m.name} (HP ${m.hp}/${m.maxHp}) <button data-id="${m.id}">Assign Worker</button>`;
+    row.querySelector('button').onclick = () => {
+      m.assigned = 'worker';
+      saveAccount();
+      renderTabs();
+    };
+    squadList.append(row);
+  });
+
+  workerMon.forEach((m) => {
+    const item = Object.keys(m.generator)[0];
+    const row = document.createElement('div');
+    row.innerHTML = `${m.name} generating ${item} <button data-id="${m.id}">Return to Squad</button>`;
+    row.querySelector('button').onclick = () => {
+      m.assigned = 'squad';
+      saveAccount();
+      renderTabs();
+    };
+    workerList.append(row);
+  });
+
+  $('heal-all').onclick = () => {
+    if (inv.potion <= 0) return toast('No potion available. Craft one first.');
+    inv.potion -= 1;
+    squad.forEach((m) => {
+      m.hp = m.maxHp;
+    });
+    saveAccount();
+    renderTabs();
+    toast('Squad healed.');
   };
+}
 
-  const missing = Object.entries(els)
-    .filter(([, value]) => !value)
-    .map(([key]) => key);
+function canCraft(recipe) {
+  return Object.entries(recipe.cost).every(([item, amount]) => state.account.inventory[item] >= amount);
+}
 
-  if (missing.length) {
-    console.error(`Missing required DOM elements: ${missing.join(', ')}`);
+function renderCrafting() {
+  const inv = state.account.inventory;
+  els.tabCrafting.innerHTML = `
+    <h2>Crafting</h2>
+    <p>Use materials generated by worker Ploxmon to craft balls and recovery items.</p>
+    <article class="card">
+      <h3>Materials</h3>
+      <p>ember ${inv.ember} · dew ${inv.dew} · fiber ${inv.fiber} · spark ${inv.spark} · ore ${inv.ore}</p>
+    </article>
+    <div id="recipe-list" class="split"></div>
+  `;
+
+  const container = $('recipe-list');
+  Object.entries(RECIPES).forEach(([key, recipe]) => {
+    const c = document.createElement('article');
+    c.className = 'card';
+    const costs = Object.entries(recipe.cost).map(([item, qty]) => `${qty} ${item}`).join(', ');
+    c.innerHTML = `<h3>${recipe.label}</h3><p class="help">Cost: ${costs}</p><button>Craft</button>`;
+    const btn = c.querySelector('button');
+    btn.disabled = !canCraft(recipe);
+    btn.onclick = () => {
+      if (!canCraft(recipe)) return;
+      Object.entries(recipe.cost).forEach(([item, qty]) => {
+        inv[item] -= qty;
+      });
+      if (key === 'regular_ball') inv.ploxballs_regular += recipe.yield;
+      if (key === 'great_ball') inv.ploxballs_great += recipe.yield;
+      if (key === 'potion') inv.potion += recipe.yield;
+      if (key === 'status_tonic') inv.status_tonic += recipe.yield;
+      saveAccount();
+      renderTabs();
+      toast(`${recipe.label} crafted.`);
+    };
+    container.append(c);
+  });
+}
+
+function throwBall(encounter, ballType) {
+  const inv = state.account.inventory;
+  const hpFactor = 1 - encounter.hp / encounter.maxHp;
+  const base = ballType === 'great' ? 0.45 : 0.25;
+  const chance = Math.min(0.92, base + hpFactor * 0.5);
+
+  if (ballType === 'great') inv.ploxballs_great -= 1;
+  else inv.ploxballs_regular -= 1;
+
+  if (Math.random() < chance) {
+    state.account.ploxmons.push(toPlox(encounter));
+    state.encounter = null;
+    saveAccount();
+    renderTabs();
+    toast(`Captured ${encounter.name}!`);
     return;
   }
 
-  const addLog = (text, cls = '') => {
-    const line = document.createElement('div');
-    line.textContent = text;
-    line.className = `log-line ${cls}`.trim();
-    els.log.prepend(line);
+  encounter.hp = Math.max(1, encounter.hp - Math.floor(Math.random() * 8));
+  saveAccount();
+  renderTabs();
+  toast(`${encounter.name} escaped the ball.`);
+}
+
+function renderWild() {
+  const squad = currentSquad();
+  const inv = state.account.inventory;
+  const lead = squad[0];
+
+  els.tabWild.innerHTML = `
+    <h2>Wild</h2>
+    <p>Find and capture wild Ploxmon. You need at least one squad member to search.</p>
+    <div class="split">
+      <article class="card">
+        <h3>Search Zone</h3>
+        <p class="help">Lead: ${lead ? lead.name : 'none'} · Regular Balls: ${inv.ploxballs_regular} · Great Balls: ${inv.ploxballs_great}</p>
+        <button id="search-wild" ${lead ? '' : 'disabled'}>Search Wild</button>
+        <div id="encounter-box"></div>
+      </article>
+      <article class="card">
+        <h3>How capture works</h3>
+        <p class="help">Lower wild HP = easier captures. Great Ploxballs have better base chance.</p>
+        <p class="help">Tip: keep at least one Ploxmon in squad. Workers cannot battle.</p>
+      </article>
+    </div>
+  `;
+
+  $('search-wild').onclick = () => {
+    if (!lead) return;
+    const found = toPlox(pick(WILD_POOL));
+    found.hp = Math.max(18, found.maxHp - Math.floor(Math.random() * 60));
+    state.encounter = found;
+    renderTabs();
+    toast(`A wild ${found.name} appeared!`);
   };
 
-  const setScene = (scene) => {
-    state.scene = scene;
-    els.startMenu.classList.toggle('hidden', scene !== 'menu');
-    els.hub.classList.toggle('hidden', scene !== 'hub');
-    els.battleUi.classList.toggle('hidden', scene !== 'battle');
-  };
+  const box = $('encounter-box');
+  if (state.encounter) {
+    const e = state.encounter;
+    box.innerHTML = `
+      <div class="log">
+        <div class="system">Wild ${e.name} (${e.type})</div>
+        <div>HP: ${e.hp}/${e.maxHp}</div>
+      </div>
+      <div class="split" style="margin-top:.6rem">
+        <button id="throw-regular" ${inv.ploxballs_regular <= 0 ? 'disabled' : ''}>Throw Regular Ball</button>
+        <button id="throw-great" ${inv.ploxballs_great <= 0 ? 'disabled' : ''}>Throw Great Ball</button>
+      </div>
+      <button id="leave-wild" style="margin-top:.6rem">Leave Encounter</button>
+    `;
 
-  const updateHpBar = (fillEl, hp, maxHp) => {
-    const pct = hpPercent(hp, maxHp);
-    fillEl.style.width = `${pct}%`;
-
-    if (pct > 55) {
-      fillEl.style.background = 'linear-gradient(90deg, #57d98c, #90f4b8)';
-    } else if (pct > 25) {
-      fillEl.style.background = 'linear-gradient(90deg, #f3d169, #ffe2a1)';
-    } else {
-      fillEl.style.background = 'linear-gradient(90deg, #ec6d86, #ff99ad)';
-    }
-  };
-
-  const refreshHub = () => {
-    const active = getOwnedMonster(state.activeMonsterName);
-    els.currentPartner.textContent = active
-      ? `Active ${active.species}: ${active.name} (${active.type.toUpperCase()})`
-      : 'Pick a captured Ploxmon to fight with.';
-
-    const names = state.collection.map((m) => m.name);
-    els.collection.textContent = `Captured Ploxmon: ${names.length ? names.join(', ') : 'none yet'}`;
-  };
-
-  const setControlsEnabled = (enabled) => {
-    for (const button of els.moveButtons.querySelectorAll('button')) {
-      button.disabled = !enabled;
-    }
-    els.capture.disabled = !enabled;
-    els.run.disabled = !enabled;
-    els.searchBattle.disabled = !enabled;
-  };
-
-  const renderBattle = () => {
-    if (!state.battle) return;
-    const { player, enemy } = state.battle;
-
-    els.playerName.textContent = `${player.name} (${player.species})`;
-    els.enemyName.textContent = `Wild ${enemy.name} (${enemy.species})`;
-    els.playerHpText.textContent = `${player.hp}/${player.maxHp}`;
-    els.enemyHpText.textContent = `${enemy.hp}/${enemy.maxHp}`;
-    els.playerStatus.textContent = player.attackBuff ? `Attack buff +${player.attackBuff}` : 'No status effects';
-    els.enemyStatus.textContent = enemy.attackBuff ? `Attack buff +${enemy.attackBuff}` : 'No status effects';
-    updateHpBar(els.playerHpFill, player.hp, player.maxHp);
-    updateHpBar(els.enemyHpFill, enemy.hp, enemy.maxHp);
-  };
-
-  const damageFromMove = (attacker, defender, move) => {
-    if (move.power <= 0) return 0;
-    if (Math.random() > move.accuracy) return -1;
-
-    const eff = effectiveness[move.type]?.[defender.type] ?? 1;
-    const variance = 0.9 + Math.random() * 0.22;
-    return Math.max(1, Math.round((move.power + attacker.attackBuff) * eff * variance));
-  };
-
-  const pulseCard = async (card, className, ms = 300) => {
-    card.classList.add(className);
-    await delay(ms);
-    card.classList.remove(className);
-  };
-
-  const handleMove = async (attacker, defender, move, attackerCard, defenderCard) => {
-    await pulseCard(attackerCard, 'attack', 220);
-
-    if (move.power === 0 && move.buff) {
-      attacker.attackBuff += move.buff;
-      addLog(`${attacker.name} used ${move.name}. Attack rose by ${move.buff}.`, 'system');
-      await delay(420);
-      return;
-    }
-
-    const dmg = damageFromMove(attacker, defender, move);
-    if (dmg < 0) {
-      addLog(`${attacker.name} used ${move.name}, but it missed!`);
-      await delay(450);
-      return;
-    }
-
-    defender.hp = Math.max(0, defender.hp - dmg);
-    await pulseCard(defenderCard, 'hit', 380);
-
-    const eff = effectiveness[move.type]?.[defender.type] ?? 1;
-    if (eff > 1.1) {
-      addLog(`${attacker.name} used ${move.name}. Super effective! ${dmg} damage.`);
-    } else if (eff < 0.9) {
-      addLog(`${attacker.name} used ${move.name}. Not very effective. ${dmg} damage.`);
-    } else {
-      addLog(`${attacker.name} used ${move.name} for ${dmg} damage.`);
-    }
-
-    renderBattle();
-    await delay(520);
-  };
-
-  const finishBattleToHub = async (message, cls = 'system') => {
-    addLog(message, cls);
-    setControlsEnabled(false);
-    await delay(900);
-    state.battle = null;
-    setScene('hub');
-    refreshHub();
-  };
-
-  const enemyTurn = async () => {
-    const battle = state.battle;
-    if (!battle || battle.over) return;
-
-    addLog(`Wild ${battle.enemy.name} is thinking...`, 'system');
-    await delay(550);
-    const moveIndex = Math.floor(Math.random() * battle.enemy.moves.length);
-    await handleMove(battle.enemy, battle.player, battle.enemy.moves[moveIndex], els.enemyCard, els.playerCard);
-
-    if (battle.player.hp <= 0) {
-      battle.over = true;
-      await finishBattleToHub(`${battle.player.name} fainted! You rushed back to the hub.`, 'lose');
-    }
-  };
-
-  const playerMove = async (moveIndex) => {
-    const battle = state.battle;
-    if (!battle || battle.over || state.busy) return;
-
-    state.busy = true;
-    setControlsEnabled(false);
-
-    await handleMove(battle.player, battle.enemy, battle.player.moves[moveIndex], els.playerCard, els.enemyCard);
-
-    if (battle.enemy.hp <= 0) {
-      battle.over = true;
-      await finishBattleToHub(`Wild ${battle.enemy.name} fainted!`, 'win');
-      state.busy = false;
-      return;
-    }
-
-    await enemyTurn();
-    state.busy = false;
-
-    if (state.scene === 'battle' && !battle.over) {
-      setControlsEnabled(true);
-    }
-  };
-
-  const captureAttempt = async () => {
-    const battle = state.battle;
-    if (!battle || battle.over || state.busy) return;
-
-    state.busy = true;
-    setControlsEnabled(false);
-
-    addLog(`You threw a Capture Orb at ${battle.enemy.name}!`, 'system');
-    await pulseCard(els.enemyCard, 'hit', 500);
-
-    const healthFactor = 1 - battle.enemy.hp / battle.enemy.maxHp;
-    const chance = 0.2 + healthFactor * 0.65;
-
-    if (Math.random() < chance) {
-      battle.over = true;
-      if (!getOwnedMonster(battle.enemy.name)) {
-        state.collection.push(cloneMonster({ ...battle.enemy, hp: battle.enemy.maxHp, attackBuff: 0 }));
-        addLog(`${battle.enemy.name} was captured!`, 'win');
-      } else {
-        addLog(`${battle.enemy.name} was caught, but you already own one.`, 'system');
-      }
-
-      await finishBattleToHub('Capture complete. Returning to hub...');
-      state.busy = false;
-      return;
-    }
-
-    addLog(`${battle.enemy.name} broke free!`, 'lose');
-    await delay(500);
-    await enemyTurn();
-    state.busy = false;
-
-    if (state.scene === 'battle' && !battle.over) {
-      setControlsEnabled(true);
-    }
-  };
-
-  const wireMoves = () => {
-    els.moveButtons.innerHTML = '';
-    state.battle.player.moves.forEach((move, idx) => {
-      const btn = document.createElement('button');
-      btn.textContent = `${move.name} (${move.type})`;
-      btn.addEventListener('click', () => {
-        void playerMove(idx);
-      });
-      els.moveButtons.append(btn);
-    });
-  };
-
-  const startEncounter = () => {
-    if (state.busy) return;
-
-    const active = getOwnedMonster(state.activeMonsterName);
-    if (!active) {
-      refreshHub();
-      return;
-    }
-
-    let enemy = pickMonster();
-    if (enemy.name === active.name) {
-      const options = roster.filter((monster) => monster.name !== active.name);
-      enemy = cloneMonster(options[Math.floor(Math.random() * options.length)]);
-    }
-
-    state.battle = {
-      player: { ...cloneMonster(active), hp: active.maxHp, attackBuff: 0 },
-      enemy: { ...enemy, hp: enemy.maxHp, attackBuff: 0 },
-      over: false
+    $('throw-regular').onclick = () => throwBall(e, 'regular');
+    $('throw-great').onclick = () => throwBall(e, 'great');
+    $('leave-wild').onclick = () => {
+      state.encounter = null;
+      renderTabs();
     };
+  }
+}
 
-    els.log.innerHTML = '';
-    addLog(`A wild ${enemy.name} (${enemy.species}) appeared!`, 'system');
-    setScene('battle');
-    renderBattle();
-    wireMoves();
-    setControlsEnabled(true);
-  };
+function renderBattle() {
+  els.tabBattle.innerHTML = `
+    <h2>Battle</h2>
+    <p>Online PvP requires a backend server. For now, this tab queues you against local ghost trainers.</p>
+    <article class="card">
+      <h3>Ghost Arena (offline placeholder)</h3>
+      <p class="help">Battle rules: uses your first squad Ploxmon. Winner gets 1 trainer XP + 1 random material.</p>
+      <button id="queue-battle" ${currentSquad().length ? '' : 'disabled'}>Queue Battle</button>
+      <div id="battle-log" class="log"></div>
+    </article>
+  `;
 
-  const runToHub = async () => {
-    if (!state.battle || state.busy) return;
+  $('queue-battle').onclick = () => {
+    const lead = currentSquad()[0];
+    const ghost = pick(WILD_POOL);
+    const winChance = lead ? Math.min(0.9, 0.5 + lead.level * 0.03) : 0;
+    const win = Math.random() < winChance;
+    const log = $('battle-log');
+    log.innerHTML = '';
+    log.innerHTML += `<div class="system">You vs Ghost Trainer using ${ghost.name}</div>`;
 
-    state.busy = true;
-    setControlsEnabled(false);
-    await finishBattleToHub('You ran back to the hub safely.', 'system');
-    state.busy = false;
-  };
-
-  const chooseStarter = (name) => {
-    const starter = cloneMonster(roster.find((monster) => monster.name === name));
-    state.collection = [starter];
-    state.activeMonsterName = starter.name;
-    setScene('hub');
-    refreshHub();
-  };
-
-  const renderStarterMenu = () => {
-    els.starterButtons.innerHTML = '';
-    for (const monster of roster.slice(0, 3)) {
-      const btn = document.createElement('button');
-      btn.textContent = `${monster.name} (${monster.type}) - ${monster.species}`;
-      btn.addEventListener('click', () => chooseStarter(monster.name));
-      els.starterButtons.append(btn);
+    if (win) {
+      const reward = pick(['ember', 'dew', 'fiber', 'spark', 'ore']);
+      state.account.inventory[reward] += 1;
+      state.account.trainerLevel += 1;
+      log.innerHTML += `<div class="win">Victory! +1 ${reward}, trainer level up.</div>`;
+    } else {
+      log.innerHTML += '<div class="lose">Defeat. Heal and craft, then queue again.</div>';
     }
+
+    saveAccount();
+    renderProfile();
+    toast('Battle completed.');
+  };
+}
+
+function renderSettings() {
+  els.tabSettings.innerHTML = `
+    <h2>Settings</h2>
+    <p>Manage account session and local save data.</p>
+    <article class="card">
+      <h3>Account</h3>
+      <p class="help">Signed in as ${state.account.name}</p>
+      <button id="sign-out">Sign Out</button>
+      <button id="delete-save">Delete Save</button>
+    </article>
+  `;
+
+  $('sign-out').onclick = () => {
+    state.account = null;
+    state.encounter = null;
+    els.profileChip.classList.add('hidden');
+    showView('auth');
+    toast('Signed out.');
   };
 
-  els.searchBattle.addEventListener('click', startEncounter);
-  els.capture.addEventListener('click', () => {
-    void captureAttempt();
-  });
-  els.run.addEventListener('click', () => {
-    void runToHub();
-  });
+  $('delete-save').onclick = () => {
+    localStorage.removeItem(`ploxmon_account_${state.account.name.toLowerCase()}`);
+    state.account = null;
+    state.encounter = null;
+    els.profileChip.classList.add('hidden');
+    showView('auth');
+    toast('Save deleted.');
+  };
+}
 
-  renderStarterMenu();
-  setScene('menu');
-};
+function renderTabs() {
+  if (!state.account) return;
+  renderHub();
+  renderCrafting();
+  renderWild();
+  renderSettings();
+  renderBattle();
+}
+
+function createAccount() {
+  const name = els.createName.value.trim();
+  const pass = els.createPass.value;
+  if (!name || pass.length < 3) return toast('Use a name and password (3+ chars).');
+  if (loadAccountByName(name)) return toast('That trainer name already exists.');
+
+  state.account = {
+    name,
+    passHash: hash(pass),
+    trainerLevel: 1,
+    inventory: defaultInventory(),
+    ploxmons: [],
+    lastCollectedAt: Date.now(),
+    updatedAt: Date.now()
+  };
+
+  saveAccount();
+  renderProfile();
+  showView('starter');
+  renderStarterSelect();
+}
+
+function login() {
+  const name = els.loginName.value.trim();
+  const pass = els.loginPass.value;
+  const account = loadAccountByName(name);
+  if (!account || account.passHash !== hash(pass)) return toast('Invalid login.');
+
+  state.account = account;
+  collectWorkerItems();
+  renderProfile();
+
+  if (!state.account.ploxmons.length) {
+    showView('starter');
+    renderStarterSelect();
+  } else {
+    showView('game');
+    setTab('hub');
+  }
+
+  toast(`Welcome back, ${name}.`);
+}
+
+function wireEvents() {
+  els.createBtn.addEventListener('click', createAccount);
+  els.loginBtn.addEventListener('click', login);
+  els.navButtons.forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
+}
+
+function init() {
+  if (!ensureDom()) return;
+  showView('auth');
+  wireEvents();
+}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

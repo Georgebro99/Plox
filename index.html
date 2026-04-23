@@ -3,72 +3,77 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Plox Monster Battle</title>
+    <title>Ploxmon Frontier</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="game-shell">
-      <header>
-        <h1>Plox Monster Battle</h1>
-        <p class="subtitle">2D battles with Ploxmon encounters + capture (no exploration).</p>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>Ploxmon Frontier</h1>
+          <p class="muted">Capture, craft, automate, and battle with your Ploxmon team.</p>
+        </div>
+        <div id="profile-chip" class="profile-chip hidden"></div>
       </header>
 
-      <section id="start-menu" class="menu-panel">
-        <h2>Start Menu</h2>
-        <p>Choose 1 of 3 starter Ploxmon to begin hunting wild Ploxmon.</p>
-        <div id="starter-buttons" class="starter-grid"></div>
-      </section>
+      <section id="auth-view" class="panel">
+        <h2>Welcome Trainer</h2>
+        <p>Create an account or sign in. Your progress is saved in this browser.</p>
 
-      <section id="hub" class="menu-panel hidden">
-        <h2>Trainer Hub</h2>
-        <p id="current-partner"></p>
-        <div class="hub-actions">
-          <button id="search-battle">Search for Wild Battle</button>
+        <div class="auth-grid">
+          <article class="card">
+            <h3>Create Account</h3>
+            <label>
+              Trainer Name
+              <input id="create-name" type="text" placeholder="NovaTrainer" maxlength="18" />
+            </label>
+            <label>
+              Password
+              <input id="create-pass" type="password" placeholder="••••••" maxlength="32" />
+            </label>
+            <button id="create-btn">Create Account + Start</button>
+            <p class="help">Starts with: 1 starter Ploxmon + 20 Regular Ploxballs.</p>
+          </article>
+
+          <article class="card">
+            <h3>Sign In</h3>
+            <label>
+              Trainer Name
+              <input id="login-name" type="text" placeholder="NovaTrainer" maxlength="18" />
+            </label>
+            <label>
+              Password
+              <input id="login-pass" type="password" placeholder="••••••" maxlength="32" />
+            </label>
+            <button id="login-btn">Sign In</button>
+            <p class="help">Existing saves are loaded automatically after sign-in.</p>
+          </article>
         </div>
-        <p id="collection" class="collection"></p>
       </section>
 
-      <section id="battle-ui" class="hidden">
-        <section class="battlefield">
-          <article class="monster-card" id="player-card">
-            <h3 id="player-name">Your Monster</h3>
-            <div class="hp-wrap">
-              <span>HP</span>
-              <div class="hp-bar">
-                <div class="hp-fill" id="player-hp-fill"></div>
-              </div>
-              <span id="player-hp-text">--/--</span>
-            </div>
-            <p id="player-status" class="status-text"></p>
-          </article>
-
-          <article class="monster-card enemy" id="enemy-card">
-            <h3 id="enemy-name">Wild Monster</h3>
-            <div class="hp-wrap">
-              <span>HP</span>
-              <div class="hp-bar">
-                <div class="hp-fill" id="enemy-hp-fill"></div>
-              </div>
-              <span id="enemy-hp-text">--/--</span>
-            </div>
-            <p id="enemy-status" class="status-text"></p>
-          </article>
-        </section>
-
-        <section class="controls">
-          <h3>Your Turn</h3>
-          <div id="move-buttons" class="move-grid"></div>
-          <div class="action-row">
-            <button id="capture" class="accent">Throw Capture Orb</button>
-            <button id="run" class="secondary">Run Back to Hub</button>
-          </div>
-        </section>
-
-        <section class="log-panel">
-          <h3>Battle Log</h3>
-          <div id="log" class="log" aria-live="polite"></div>
-        </section>
+      <section id="starter-view" class="panel hidden">
+        <h2>Choose Your Starter Ploxmon</h2>
+        <p>This is your first battle squad member. You can capture more in Wild.</p>
+        <div id="starter-list" class="starter-list"></div>
       </section>
+
+      <section id="game-view" class="hidden">
+        <nav class="hub-nav">
+          <button data-tab="hub" class="nav-btn active">Trainer Hub</button>
+          <button data-tab="crafting" class="nav-btn">Crafting</button>
+          <button data-tab="wild" class="nav-btn">Wild</button>
+          <button data-tab="settings" class="nav-btn">Settings</button>
+          <button data-tab="battle" class="nav-btn">Battle</button>
+        </nav>
+
+        <section id="tab-hub" class="panel tab-panel"></section>
+        <section id="tab-crafting" class="panel tab-panel hidden"></section>
+        <section id="tab-wild" class="panel tab-panel hidden"></section>
+        <section id="tab-settings" class="panel tab-panel hidden"></section>
+        <section id="tab-battle" class="panel tab-panel hidden"></section>
+      </section>
+
+      <section id="toast" class="toast hidden"></section>
     </main>
 
     <script src="script.js"></script>
