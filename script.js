@@ -70,6 +70,39 @@ const WILD_POOL = [
   }
 ];
 
+
+const SPECIES_BY_NAME = Object.fromEntries(WILD_POOL.map((m) => [m.name, m]));
+
+function cap(text) {
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
+}
+
+function normalizePloxmon(mon) {
+  const base = SPECIES_BY_NAME[mon.name] || STARTERS[0];
+  const safeMoves = Array.isArray(mon.moves) && mon.moves.every((m) => m && typeof m === 'object' && 'name' in m)
+    ? mon.moves
+    : structuredClone(base.moves);
+
+  return {
+    ...structuredClone(base),
+    ...mon,
+    moves: safeMoves.slice(0, 4),
+    unlockMoves: structuredClone(base.unlockMoves || []),
+    xp: Number.isFinite(mon.xp) ? mon.xp : 0,
+    level: Number.isFinite(mon.level) && mon.level > 0 ? mon.level : 1,
+    attackBuff: Number.isFinite(mon.attackBuff) ? mon.attackBuff : 0,
+    hp: Number.isFinite(mon.hp) ? Math.max(0, mon.hp) : base.maxHp,
+    maxHp: Number.isFinite(mon.maxHp) && mon.maxHp > 0 ? mon.maxHp : base.maxHp
+  };
+}
+
+function normalizeAccount(account) {
+  if (!account) return account;
+  account.ploxmons = (account.ploxmons || []).map((m) => normalizePloxmon(m));
+  account.inventory = { ...defaultInventory(), ...(account.inventory || {}) };
+  return account;
+}
+
 const EFFECTIVENESS = {
   fire: { grass: 1.3, water: 0.75, earth: 0.9 },
   water: { fire: 1.3, earth: 1.2, grass: 0.75 },
@@ -148,7 +181,7 @@ function grantXp(mon, amount, onUnlock) {
 
 function loadAccountByName(name) {
   const raw = localStorage.getItem(`ploxmon_account_${name.toLowerCase()}`);
-  return raw ? JSON.parse(raw) : null;
+  return raw ? normalizeAccount(JSON.parse(raw)) : null;
 }
 
 function saveAccount(account = state.account) {
@@ -164,7 +197,8 @@ function toast(message) {
 }
 
 function toPlox(mon) {
-  return { ...structuredClone(mon), id: uid(), hp: mon.maxHp, level: 1, xp: 0, assigned: 'squad', attackBuff: 0, unlockMoves: structuredClone(mon.unlockMoves || []) };
+  const normalized = normalizePloxmon(mon);
+  return { ...structuredClone(normalized), id: uid(), hp: normalized.maxHp, level: 1, xp: 0, assigned: 'squad', attackBuff: 0, unlockMoves: structuredClone(normalized.unlockMoves || []) };
 }
 
 function ensureDom() {
@@ -215,7 +249,7 @@ function renderStarterSelect() {
   STARTERS.forEach((s) => {
     const card = document.createElement('article');
     card.className = 'card mon-card';
-    card.innerHTML = `<h3>${s.name}</h3><p class="pill">${s.type} type</p><p class="help">HP ${s.maxHp}</p><button>Choose</button>`;
+    card.innerHTML = `<h3>${s.name}</h3><p class="pill">${cap(s.type)} Type</p><p class="help">HP ${s.maxHp}</p><button>Choose</button>`;
     card.querySelector('button').onclick = () => {
       state.account.ploxmons = [toPlox(s)];
       saveAccount();
@@ -259,7 +293,7 @@ function renderHub() {
   squad.forEach((m) => {
     const d = document.createElement('div');
     d.className = 'row';
-    d.innerHTML = `<span>${m.name} Lv${m.level} ${m.type}</span><button>Assign Worker</button>`;
+    d.innerHTML = `<span>${m.name} Lv${m.level} ${cap(m.type)}</span><button>Assign Worker</button>`;
     d.querySelector('button').onclick = () => {
       m.assigned = 'worker';
       saveAccount();
@@ -339,7 +373,7 @@ function renderFightCard(mon, label) {
   return `
     <article class="battle-card">
       <h4>${label}: ${mon.name}</h4>
-      <p class="pill">${mon.type} · Lv ${mon.level}</p>
+      <p class="pill">${cap(mon.type)} · Lv ${mon.level}</p>
       ${hpBar(mon.hp, mon.maxHp)}
       <p class="help">HP ${mon.hp}/${mon.maxHp} · XP ${(mon.xp || 0)}/${xpToNext(mon.level || 1)}</p>
     </article>
@@ -482,7 +516,7 @@ function wireWildActionMenu(lead, inv) {
     const wrap = $('wild-attack');
     lead.moves.forEach((m, idx) => {
       const btn = document.createElement('button');
-      btn.textContent = `${m.name} (${m.type})`;
+      btn.textContent = `${m.name} (${cap(m.type)})`;
       btn.disabled = state.wildTurnBusy;
       btn.onclick = () => { void playWildTurn(idx); };
       wrap.append(btn);
