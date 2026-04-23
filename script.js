@@ -124,6 +124,8 @@ function normalizeAccount(account) {
   if (!account) return account;
   account.ploxmons = (account.ploxmons || []).map((m) => normalizePloxmon(m));
   account.inventory = { ...defaultInventory(), ...(account.inventory || {}) };
+  account.trainerLevel = Number.isFinite(account.trainerLevel) ? account.trainerLevel : 1;
+  account.trainerXp = Number.isFinite(account.trainerXp) ? account.trainerXp : 0;
   return account;
 }
 
@@ -155,7 +157,7 @@ const defaultInventory = () => ({
   ore: 0
 });
 
-const state = { account: null, activeTab: 'hub', encounter: null, wildTurnBusy: false, wildMenu: 'root', wildLog: [] };
+const state = { account: null, activeTab: 'hub', encounter: null, wildTurnBusy: false, wildMenu: 'root', wildLog: [], arenaEncounter: null, arenaMenu: 'root', arenaLog: [], arenaBusy: false };
 const $ = (id) => document.getElementById(id);
 const els = {};
 
@@ -203,6 +205,50 @@ function applyLevelGrowth(mon, onUnlock) {
 function grantXp(mon, amount, onUnlock) {
   mon.xp = (mon.xp || 0) + amount;
   return applyLevelGrowth(mon, onUnlock);
+}
+
+
+function trainerXpToNext(level) {
+  return 30 + level * 15;
+}
+
+function workerCapacity(level) {
+  if (level >= 12) return 4;
+  if (level >= 8) return 3;
+  if (level >= 5) return 2;
+  return 1;
+}
+
+function applyTrainerLevelRewards(account, level) {
+  const rewards = {
+    2: { potion: 2, msg: 'Reward: 2 Potions' },
+    3: { ploxballs_great: 3, msg: 'Reward: 3 Great Ploxballs' },
+    5: { status_tonic: 2, msg: 'Reward: Worker Slot + Status Tonics' },
+    7: { ploxballs_regular: 10, msg: 'Reward: 10 Regular Ploxballs' },
+    8: { potion: 3, msg: 'Reward: Worker Slot + 3 Potions' },
+    10: { ploxballs_great: 5, msg: 'Reward: 5 Great Ploxballs' }
+  };
+
+  const reward = rewards[level];
+  if (!reward) return null;
+  for (const [k, v] of Object.entries(reward)) {
+    if (k === 'msg') continue;
+    account.inventory[k] = (account.inventory[k] || 0) + v;
+  }
+  return reward.msg;
+}
+
+function grantTrainerXp(amount, logPush) {
+  state.account.trainerXp = (state.account.trainerXp || 0) + amount;
+  while (state.account.trainerXp >= trainerXpToNext(state.account.trainerLevel || 1)) {
+    state.account.trainerXp -= trainerXpToNext(state.account.trainerLevel || 1);
+    state.account.trainerLevel = (state.account.trainerLevel || 1) + 1;
+    const msg = applyTrainerLevelRewards(state.account, state.account.trainerLevel);
+    if (logPush) {
+      logPush(`<div class="system">Trainer Level Up! Lv ${state.account.trainerLevel}</div>`);
+      if (msg) logPush(`<div class="system">${msg}</div>`);
+    }
+  }
 }
 
 function loadAccountByName(name) {
@@ -292,7 +338,7 @@ function renderStarterSelect() {
 
 function renderProfile() {
   els.profileChip.classList.remove('hidden');
-  els.profileChip.textContent = `${state.account.name} · Lv ${state.account.trainerLevel} Trainer`;
+  els.profileChip.textContent = `${state.account.name} · Trainer Lv ${state.account.trainerLevel} (${state.account.trainerXp}/${trainerXpToNext(state.account.trainerLevel)})`; 
 }
 
 function renderHub() {
@@ -307,7 +353,7 @@ function renderHub() {
       <div class="kpi">Regular Balls<b>${inv.ploxballs_regular}</b></div>
       <div class="kpi">Great Balls<b>${inv.ploxballs_great}</b></div>
       <div class="kpi">Potions<b>${inv.potion}</b></div>
-      <div class="kpi">Workers<b>${workers().length}</b></div>
+      <div class="kpi">Workers<b>${workers().length}/${workerCapacity(state.account.trainerLevel)}</b></div>
     </div>
     <div class="split">
       <article class="card"><h3>Squad</h3><div id="squad-list"></div><button id="heal-all">Heal Squad (1 Potion)</button></article>
@@ -323,6 +369,10 @@ function renderHub() {
     d.className = 'row';
     d.innerHTML = `<span>${m.name} Lv${m.level} ${cap(m.type)}</span><button>Assign Worker</button>`;
     d.querySelector('button').onclick = () => {
+      if (workers().length >= workerCapacity(state.account.trainerLevel)) {
+        toast(`Worker slots full. Reach Trainer Lv 5/8/12 for more.`);
+        return;
+      }
       m.assigned = 'worker';
       saveAccount();
       renderTabs();
@@ -405,6 +455,7 @@ function renderFightCard(mon, label) {
       <p class="pill">${cap(mon.type)} · Lv ${mon.level}</p>
       ${hpBar(mon.hp, mon.maxHp)}
       <p class="help">HP ${mon.hp}/${mon.maxHp} · XP ${(mon.xp || 0)}/${xpToNext(mon.level || 1)}</p>
+      <p class="help">${(mon.moves || []).map((mv, i) => `${mv.name}: ${(mon.movePP || [])[i] ?? '-'} / ${(mon.movePPMax || [])[i] ?? '-'}`).join(' · ')}</p>
     </article>
   `;
 }
@@ -444,6 +495,7 @@ async function playWildTurn(moveIndex) {
     state.wildLog.push(`<div class=\"win\">Wild ${wild.name} fainted.</div>`);
     const leveled = grantXp(you, 12, (m, mv) => state.wildLog.push(`<div class=\"system\">${m.name} learned ${mv.name}!</div>`));
     if (leveled) state.wildLog.push(`<div class=\"system\">${you.name} leveled up to Lv ${you.level}!</div>`);
+    grantTrainerXp(10, (line) => state.wildLog.push(line));
     state.encounter = null;
     saveAccount();
     renderTabs();
@@ -651,66 +703,157 @@ function renderWild() {
   wireWildActionMenu(lead, inv);
 }
 
+function arenaActionMenu(lead, enemy, inv) {
+  if (state.arenaMenu === 'attack') return `<div id="arena-attack" class="move-grid"></div><button id="arena-back">Back</button>`;
+  if (state.arenaMenu === 'switch') return `<div id="arena-switch" class="move-grid"></div><button id="arena-back">Back</button>`;
+  if (state.arenaMenu === 'item') return `<div class="move-grid"><button id="arena-potion" ${inv.potion <= 0 ? 'disabled' : ''}>Use Potion (${inv.potion})</button><button id="arena-tonic" ${inv.status_tonic <= 0 ? 'disabled' : ''}>Use Tonic (${inv.status_tonic})</button></div><button id="arena-back">Back</button>`;
+  return `<div class="battle-actions-grid"><button id="arena-menu-attack">Attack</button><button id="arena-menu-switch">Switch</button><button id="arena-menu-item">Item</button><button id="arena-leave">Leave</button></div>`;
+}
+
+async function arenaTurn(moveIndex) {
+  if (!state.arenaEncounter || state.arenaBusy) return;
+  state.arenaBusy = true;
+  const lead = currentSquad()[0];
+  const enemy = state.arenaEncounter;
+  ensureMovePP(lead);
+  const mv = lead.moves[moveIndex];
+  if ((lead.movePP[moveIndex] || 0) <= 0) {
+    state.arenaLog.push(`<div class="lose">${mv.name} is out of uses.</div>`);
+    state.arenaBusy = false;
+    renderTabs();
+    return;
+  }
+  lead.movePP[moveIndex] -= 1;
+  state.arenaLog.push(`<div class="system">${lead.name} used ${mv.name}...</div>`);
+  await sleep(250);
+  const d = calcDamage(lead, enemy, mv);
+  if (d > 0) {
+    enemy.hp = Math.max(0, enemy.hp - d);
+    state.arenaLog.push(`<div>${lead.name} dealt ${d} damage.</div>`);
+  } else if (d < 0) {
+    state.arenaLog.push(`<div>${lead.name} missed.</div>`);
+  }
+
+  if (enemy.hp <= 0) {
+    state.arenaLog.push('<div class="win">You win the arena match!</div>');
+    const reward = pick(['ember', 'dew', 'fiber', 'spark', 'ore']);
+    state.account.inventory[reward] += 2;
+    grantTrainerXp(18, (line) => state.arenaLog.push(line));
+    state.arenaLog.push(`<div class="win">Reward: 2 ${reward}</div>`);
+    state.arenaEncounter = null;
+    saveAccount();
+    renderProfile();
+    renderTabs();
+    state.arenaBusy = false;
+    return;
+  }
+
+  await sleep(380);
+  ensureMovePP(enemy);
+  const usable = enemy.moves.map((m, i) => ({m, i})).filter((x) => (enemy.movePP[x.i] || 0) > 0);
+  const choice = usable.length ? pick(usable) : { m: enemy.moves[0], i: 0 };
+  enemy.movePP[choice.i] = Math.max(0, (enemy.movePP[choice.i] || 1) - 1);
+  state.arenaLog.push(`<div class="system">Ghost ${enemy.name} used ${choice.m.name}...</div>`);
+  await sleep(250);
+  const ed = calcDamage(enemy, lead, choice.m);
+  if (ed > 0) {
+    lead.hp = Math.max(0, lead.hp - ed);
+    state.arenaLog.push(`<div class="lose">${enemy.name} dealt ${ed} damage.</div>`);
+  }
+
+  if (lead.hp <= 0) {
+    state.arenaLog.push('<div class="lose">Your lead fainted. Heal and retry.</div>');
+    state.arenaEncounter = null;
+  }
+
+  saveAccount();
+  renderTabs();
+  state.arenaBusy = false;
+}
+
+function wireArenaMenu(lead, inv) {
+  if (!state.arenaEncounter) return;
+  if (state.arenaMenu === 'root') {
+    $('arena-menu-attack').onclick = () => { state.arenaMenu = 'attack'; renderTabs(); };
+    $('arena-menu-switch').onclick = () => { state.arenaMenu = 'switch'; renderTabs(); };
+    $('arena-menu-item').onclick = () => { state.arenaMenu = 'item'; renderTabs(); };
+    $('arena-leave').onclick = () => { state.arenaEncounter = null; state.arenaMenu='root'; state.arenaLog=[]; renderTabs(); };
+    return;
+  }
+  $('arena-back').onclick = () => { state.arenaMenu = 'root'; renderTabs(); };
+  if (state.arenaMenu === 'attack') {
+    const wrap = $('arena-attack');
+    ensureMovePP(lead);
+    lead.moves.forEach((m, i) => {
+      const b = document.createElement('button');
+      b.textContent = `${m.name} (${cap(m.type)}) ${lead.movePP[i]}/${lead.movePPMax[i]}`;
+      b.disabled = state.arenaBusy || (lead.movePP[i] || 0) <= 0;
+      b.onclick = () => { void arenaTurn(i); };
+      wrap.append(b);
+    });
+  }
+  if (state.arenaMenu === 'switch') {
+    const wrap = $('arena-switch');
+    currentSquad().forEach((m) => {
+      const b = document.createElement('button');
+      b.textContent = `${m.name} HP ${m.hp}/${m.maxHp}`;
+      b.disabled = m.id === lead.id || m.hp <= 0;
+      b.onclick = () => {
+        state.account.ploxmons = [
+          ...state.account.ploxmons.filter((x) => x.id === m.id),
+          ...state.account.ploxmons.filter((x) => x.id !== m.id)
+        ];
+        state.arenaMenu='root';
+        saveAccount();
+        renderTabs();
+      };
+      wrap.append(b);
+    });
+  }
+  if (state.arenaMenu === 'item') {
+    $('arena-potion').onclick = () => { if (inv.potion<=0) return; inv.potion -=1; lead.hp = Math.min(lead.maxHp, lead.hp+35); resetMovePP(lead); saveAccount(); renderTabs(); };
+    $('arena-tonic').onclick = () => { if (inv.status_tonic<=0) return; inv.status_tonic -=1; lead.attackBuff=0; saveAccount(); renderTabs(); };
+  }
+}
+
 function renderBattle() {
+  const lead = currentSquad()[0];
+  const inv = state.account.inventory;
+  const enemy = state.arenaEncounter;
+
   els.tabBattle.innerHTML = `
     <h2>Battle</h2>
-    <p>UI upgraded with a PvP-style battle board. (Real online PvP still needs backend networking.)</p>
+    <p>Manual battle mode: every turn is controlled by you.</p>
     <article class="card">
-      <h3>Ghost Arena</h3>
-      <button id="queue-battle" ${currentSquad().length ? '' : 'disabled'}>Start Arena Match</button>
-      <div id="arena-view"></div>
-      <div id="battle-log" class="log"></div>
+      <h3>Arena</h3>
+      <button id="queue-battle" ${lead ? '' : 'disabled'}>${enemy ? 'Battle In Progress' : 'Start Arena Match'}</button>
+      <div id="arena-board"></div>
+      <div id="battle-log" class="log">${state.arenaLog.join('')}</div>
     </article>
   `;
 
-  $('queue-battle').onclick = async () => {
-    const lead = structuredClone(currentSquad()[0]);
-    if (!lead) return;
-    lead.attackBuff = 0;
+  $('queue-battle').onclick = () => {
+    if (state.arenaEncounter || !lead) return;
     const ghost = toPlox(pick(WILD_POOL));
-    ghost.attackBuff = 0;
-
-    const arenaView = $('arena-view');
-    const log = $('battle-log');
-    log.innerHTML = '<div class="system">Arena match started.</div>';
-
-    while (lead.hp > 0 && ghost.hp > 0) {
-      arenaView.innerHTML = `<div class="battle-stage">${renderFightCard(lead, 'You')}${renderFightCard(ghost, 'Ghost')}</div>`;
-      const yourMove = pick(lead.moves);
-      const d1 = calcDamage(lead, ghost, yourMove);
-      if (d1 > 0) {
-        ghost.hp = Math.max(0, ghost.hp - d1);
-        log.innerHTML += `<div>${lead.name} used ${yourMove.name} (${d1}).</div>`;
-      }
-      if (ghost.hp <= 0) break;
-
-      await sleep(300);
-      const ghostMove = pick(ghost.moves);
-      const d2 = calcDamage(ghost, lead, ghostMove);
-      if (d2 > 0) {
-        lead.hp = Math.max(0, lead.hp - d2);
-        log.innerHTML += `<div class="lose">${ghost.name} used ${ghostMove.name} (${d2}).</div>`;
-      }
-      await sleep(300);
-    }
-
-    if (lead.hp > 0) {
-      const reward = pick(['ember', 'dew', 'fiber', 'spark', 'ore']);
-      state.account.inventory[reward] += 1;
-      state.account.trainerLevel += 1;
-      const squadLead = currentSquad()[0];
-      if (squadLead) {
-        const lvl = grantXp(squadLead, 18, (m, mv) => log.innerHTML += `<div class=\"system\">${m.name} learned ${mv.name}!</div>`);
-        if (lvl) log.innerHTML += `<div class=\"system\">${squadLead.name} reached Lv ${squadLead.level}!</div>`;
-      }
-      log.innerHTML += `<div class="win">Victory! +1 ${reward}.</div>`;
-    } else {
-      log.innerHTML += '<div class="lose">Defeat. Train and craft then retry.</div>';
-    }
-
-    saveAccount();
-    renderProfile();
+    ghost.level = Math.max(1, state.account.trainerLevel);
+    state.arenaEncounter = ghost;
+    state.arenaMenu = 'root';
+    state.arenaLog = [`<div class="system">Ghost Trainer sent out ${ghost.name}!</div>`];
+    renderTabs();
   };
+
+  if (!enemy || !lead) return;
+
+  const board = $('arena-board');
+  board.innerHTML = `
+    <div class="battle-stage">
+      ${renderFightCard(lead, 'You')}
+      ${renderFightCard(enemy, 'Ghost')}
+    </div>
+    <div>${arenaActionMenu(lead, enemy, inv)}</div>
+  `;
+
+  wireArenaMenu(lead, inv);
 }
 
 function renderSettings() {
@@ -757,6 +900,7 @@ function createAccount() {
     name,
     passHash: hash(pass),
     trainerLevel: 1,
+    trainerXp: 0,
     inventory: defaultInventory(),
     ploxmons: [],
     lastCollectedAt: Date.now(),
