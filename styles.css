@@ -18,7 +18,7 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  background: radial-gradient(circle at top, #222f59 0, var(--bg) 60%);
+  background: radial-gradient(circle at top, #27376a 0, var(--bg) 60%);
   color: var(--text);
   display: grid;
   place-items: center;
@@ -26,10 +26,10 @@ body {
 }
 
 .game-shell {
-  width: min(900px, 100%);
-  background: color-mix(in oklab, var(--panel), black 12%);
+  width: min(960px, 100%);
+  background: color-mix(in oklab, var(--panel), black 10%);
   border: 1px solid #3d4876;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 1.25rem;
   box-shadow: 0 20px 40px rgb(0 0 0 / 35%);
 }
@@ -43,25 +43,73 @@ p {
 
 .subtitle {
   color: var(--muted);
-  margin-top: 0.3rem;
+  margin-top: 0.35rem;
 }
 
-.battlefield {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1.25rem;
+.hidden {
+  display: none;
 }
 
-.monster-card {
+.menu-panel {
+  margin-top: 1rem;
   background: var(--panel-alt);
   border: 1px solid #445388;
   border-radius: 12px;
   padding: 1rem;
 }
 
+.starter-grid,
+.hub-actions {
+  margin-top: 0.85rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.collection {
+  margin-top: 0.8rem;
+  color: #dce2ff;
+}
+
+.battlefield {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.1rem;
+}
+
+.monster-card {
+  position: relative;
+  background: var(--panel-alt);
+  border: 1px solid #445388;
+  border-radius: 12px;
+  padding: 1rem;
+  transition: transform 120ms ease;
+}
+
 .monster-card.enemy {
   text-align: right;
+}
+
+.monster-card.hit {
+  animation: hit-flash 420ms ease;
+}
+
+.monster-card.attack {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 0 0 2px rgb(125 143 255 / 55%);
+}
+
+@keyframes hit-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgb(236 109 134 / 0%);
+  }
+  30% {
+    box-shadow: 0 0 0 5px rgb(236 109 134 / 40%);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(236 109 134 / 0%);
+  }
 }
 
 .hp-wrap {
@@ -84,7 +132,7 @@ p {
   width: 100%;
   height: 100%;
   background: linear-gradient(90deg, var(--good), #90f4b8);
-  transition: width 250ms ease, background 250ms ease;
+  transition: width 350ms ease, background 250ms ease;
 }
 
 .status-text {
@@ -95,7 +143,7 @@ p {
 
 .controls,
 .log-panel {
-  margin-top: 1.2rem;
+  margin-top: 1.1rem;
   background: var(--panel-alt);
   border-radius: 12px;
   border: 1px solid #445388;
@@ -109,6 +157,13 @@ p {
   gap: 0.6rem;
 }
 
+.action-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.7rem;
+  gap: 0.6rem;
+}
+
 button {
   background: #33406f;
   color: var(--text);
@@ -117,6 +172,10 @@ button {
   padding: 0.6rem 0.75rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+button.accent {
+  background: linear-gradient(180deg, #5f77ff, #4c60d4);
 }
 
 button:hover:not(:disabled) {
@@ -128,14 +187,9 @@ button:disabled {
   opacity: 0.55;
 }
 
-button.secondary {
-  margin-top: 0.8rem;
-  width: 100%;
-}
-
 .log {
   margin-top: 0.8rem;
-  max-height: 220px;
+  max-height: 240px;
   overflow-y: auto;
   background: #121831;
   border: 1px solid #3d4876;
@@ -144,7 +198,7 @@ button.secondary {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.9rem;
   display: grid;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
 
 .log-line {
@@ -159,9 +213,16 @@ button.secondary {
   color: var(--danger);
 }
 
-@media (max-width: 720px) {
+.log-line.system {
+  color: #9db0ff;
+}
+
+@media (max-width: 760px) {
   .battlefield,
-  .move-grid {
+  .move-grid,
+  .action-row,
+  .starter-grid,
+  .hub-actions {
     grid-template-columns: 1fr;
   }
 

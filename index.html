@@ -8,44 +8,66 @@
   </head>
   <body>
     <main class="game-shell">
-      <h1>Plox Monster Battle</h1>
-      <p class="subtitle">A Pokémon-style turn-based battle (no exploration).</p>
+      <header>
+        <h1>Plox Monster Battle</h1>
+        <p class="subtitle">2D Pokémon-style battles with encounters + capture (no exploration).</p>
+      </header>
 
-      <section class="battlefield">
-        <article class="monster-card" id="player-card">
-          <h2 id="player-name">Your Monster</h2>
-          <div class="hp-wrap">
-            <span>HP</span>
-            <div class="hp-bar">
-              <div class="hp-fill" id="player-hp-fill"></div>
-            </div>
-            <span id="player-hp-text">--/--</span>
-          </div>
-          <p id="player-status" class="status-text"></p>
-        </article>
-
-        <article class="monster-card enemy" id="enemy-card">
-          <h2 id="enemy-name">Enemy Monster</h2>
-          <div class="hp-wrap">
-            <span>HP</span>
-            <div class="hp-bar">
-              <div class="hp-fill" id="enemy-hp-fill"></div>
-            </div>
-            <span id="enemy-hp-text">--/--</span>
-          </div>
-          <p id="enemy-status" class="status-text"></p>
-        </article>
+      <section id="start-menu" class="menu-panel">
+        <h2>Start Menu</h2>
+        <p>Choose your starter to begin hunting wild monsters.</p>
+        <div id="starter-buttons" class="starter-grid"></div>
       </section>
 
-      <section class="controls">
-        <h3>Choose a move</h3>
-        <div id="move-buttons" class="move-grid"></div>
-        <button id="new-battle" class="secondary">Start New Battle</button>
+      <section id="hub" class="menu-panel hidden">
+        <h2>Trainer Hub</h2>
+        <p id="current-partner"></p>
+        <div class="hub-actions">
+          <button id="search-battle">Search for Wild Battle</button>
+        </div>
+        <p id="collection" class="collection"></p>
       </section>
 
-      <section class="log-panel">
-        <h3>Battle Log</h3>
-        <div id="log" class="log" aria-live="polite"></div>
+      <section id="battle-ui" class="hidden">
+        <section class="battlefield">
+          <article class="monster-card" id="player-card">
+            <h3 id="player-name">Your Monster</h3>
+            <div class="hp-wrap">
+              <span>HP</span>
+              <div class="hp-bar">
+                <div class="hp-fill" id="player-hp-fill"></div>
+              </div>
+              <span id="player-hp-text">--/--</span>
+            </div>
+            <p id="player-status" class="status-text"></p>
+          </article>
+
+          <article class="monster-card enemy" id="enemy-card">
+            <h3 id="enemy-name">Wild Monster</h3>
+            <div class="hp-wrap">
+              <span>HP</span>
+              <div class="hp-bar">
+                <div class="hp-fill" id="enemy-hp-fill"></div>
+              </div>
+              <span id="enemy-hp-text">--/--</span>
+            </div>
+            <p id="enemy-status" class="status-text"></p>
+          </article>
+        </section>
+
+        <section class="controls">
+          <h3>Your Turn</h3>
+          <div id="move-buttons" class="move-grid"></div>
+          <div class="action-row">
+            <button id="capture" class="accent">Throw Capture Orb</button>
+            <button id="run" class="secondary">Run Back to Hub</button>
+          </div>
+        </section>
+
+        <section class="log-panel">
+          <h3>Battle Log</h3>
+          <div id="log" class="log" aria-live="polite"></div>
+        </section>
       </section>
     </main>
 
